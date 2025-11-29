@@ -1,0 +1,63 @@
+﻿<!-- Pages/Points.razor -->
+@page "/points"
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h5" Style="font-weight: 700;" Class="mb-6">Экономика канала</MudText>
+
+<MudPaper Class="pa-6 mb-6" Outlined="true" Style="border-color: #27272a;">
+    <MudText Typo="Typo.h6" Class="mb-4">Настройки начислений</MudText>
+    <MudGrid>
+        <MudItem xs="12" sm="6" lg="4">
+            <MudTextField @bind-Value="Config.PerMessage" Label="За сообщение" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Chat" />
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="4">
+            <MudTextField @bind-Value="Config.PerMinute" Label="За минуту просмотра" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Timer" />
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="4">
+            <MudTextField @bind-Value="Config.SubBonus" Label="Бонус за сабку" Variant="Variant.Outlined" />
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="4">
+            <MudTextField @bind-Value="Config.FollowBonus" Label="Бонус за фоллов" Variant="Variant.Outlined" />
+        </MudItem>
+    </MudGrid>
+    <div class="d-flex justify-end mt-4">
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Save" OnClick="SaveConfig">Применить настройки</MudButton>
+    </div>
+</MudPaper>
+
+<MudTable Items="@_users" Dense="true" Hover="true" Outlined="true" Style="border-color: #27272a;">
+    <ToolBarContent>
+        <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Primary" Class="mr-3" />
+        <MudText Typo="Typo.h6">База пользователей</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="_search" Placeholder="Поиск..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Margin="Margin.Dense" Variant="Variant.Outlined" />
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Пользователь</MudTh>
+        <MudTh Style="text-align: right;">Баланс</MudTh>
+        <MudTh Style="text-align: right;">Активность</MudTh>
+        <MudTh Style="text-align: right;">Действия</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="User">@context.Username</MudTd>
+        <MudTd DataLabel="Points" Style="text-align: right; font-family: monospace; color: #06b6d4; font-weight: bold;">@context.Points.ToString("N0")</MudTd>
+        <MudTd DataLabel="LastActive" Style="text-align: right;" Class="mud-text-secondary">@context.LastActive</MudTd>
+        <MudTd Style="text-align: right;">
+            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Surface">Изм.</MudButton>
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    string _search = "";
+    class PConfig { public int PerMessage { get; set; } = 10; public int PerMinute { get; set; } = 5; public int SubBonus { get; set; } = 2500; public int FollowBonus { get; set; } = 500; }
+    class PUser { public string Username { get; set; } public int Points { get; set; } public string LastActive { get; set; } }
+
+    PConfig Config = new();
+    List<PUser> _users = new() {
+        new() { Username = "TopFan_99", Points = 15420, LastActive = "2m ago"},
+        new() { Username = "LurkerPro", Points = 8500, LastActive = "1h ago"}
+    };
+
+    void SaveConfig() => Snackbar.Add("Конфигурация сохранена", Severity.Success);
+}

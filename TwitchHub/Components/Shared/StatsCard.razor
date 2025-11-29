@@ -1,0 +1,56 @@
+﻿<!-- Components/StatsCard.razor -->
+<MudPaper Class="pa-4 relative overflow-hidden transition-all"
+          Outlined="true"
+          Style="@($"border-color: #27272a; background-color: #18181b;")">
+
+    <div class="d-flex justify-space-between align-start">
+        <div>
+            <!-- Title -->
+            <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="font-weight: 500;">
+                @Title
+            </MudText>
+
+            <!-- Value -->
+            <MudText Typo="Typo.h4" Class="mt-1" Style="font-weight: 700; color: #f4f4f5;">
+                @Value
+            </MudText>
+        </div>
+
+        <!-- Icon Box with semi-transparent background -->
+        <div class="d-flex align-center justify-center rounded-lg pa-2"
+             style="@($"background-color: {GetColorHex(IconColor)}1A; color: {GetColorHex(IconColor)};")">
+            <MudIcon Icon="@Icon" Size="Size.Medium" />
+        </div>
+    </div>
+
+    <!-- Footer: Change % -->
+    <div class="d-flex align-center mt-4">
+        <MudText Typo="Typo.caption" Style="font-weight: 600; color: #22c55e;" Class="d-flex align-center">
+            @Change
+        </MudText>
+        <MudText Typo="Typo.caption" Class="mud-text-secondary ml-2">
+            от прошлого стрима
+        </MudText>
+    </div>
+</MudPaper>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Title";
+    [Parameter] public string Value { get; set; } = "0";
+    [Parameter] public string Change { get; set; } = "+0%";
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.QuestionMark;
+    [Parameter] public Color IconColor { get; set; } = Color.Default;
+
+    // Хелпер для получения HEX цвета на основе Color Enum.
+    // Используем жесткие значения Tailwind из вашего дизайна, чтобы не зависеть от изменений темы.
+    private string GetColorHex(Color c) => c switch
+    {
+        Color.Info => "#3b82f6",      // Blue-500
+        Color.Secondary => "#9146FF", // Twitch Purple
+        Color.Warning => "#eab308",   // Yellow-500
+        Color.Success => "#22c55e",   // Green-500
+        Color.Primary => "#06b6d4",   // Cyan-500
+        Color.Error => "#ef4444",     // Red-500
+        _ => "#f4f4f5"                // Zinc-100 (Default)
+    };
+}

@@ -1,0 +1,63 @@
+﻿<!-- Pages/Commands.razor -->
+@page "/commands"
+@inject ISnackbar Snackbar
+
+<div class="mb-6">
+    <MudText Typo="Typo.h5" Style="font-weight: 700;">Чат команды</MudText>
+    <MudAlert Severity="Severity.Info" Class="mt-2" Variant="Variant.Outlined" ContentAlignment="HorizontalAlignment.Left">
+        Управление командами осуществляется через Lua-скрипты. Здесь можно только включать/отключать их.
+    </MudAlert>
+</div>
+
+<MudTable Items="@_commands" Hover="true" Breakpoint="Breakpoint.Sm" Outlined="true" Style="border-color: #27272a;" Filter="new Func<CommandItem, bool>(FilterFunc)">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Список</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="_searchString" Placeholder="Поиск команд..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" Variant="Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Триггер</MudTh>
+        <MudTh>Ответ</MudTh>
+        <MudTh>Права</MudTh>
+        <MudTh>Кулдаун</MudTh>
+        <MudTh Style="text-align: right;">Статус</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Триггер" Style="color: #06b6d4; font-family: monospace;">@context.Trigger</MudTd>
+        <MudTd DataLabel="Ответ" Class="mud-text-secondary">@context.Response</MudTd>
+        <MudTd DataLabel="Права">
+            <div class="d-flex align-center gap-2">
+                <MudIcon Icon="@(context.Permission == "moderator" ? Icons.Material.Filled.Security : Icons.Material.Filled.Person)" Size="Size.Small" Color="@(context.Permission == "moderator" ? Color.Error : Color.Default)" />
+                <MudText Typo="Typo.body2">@context.Permission</MudText>
+            </div>
+        </MudTd>
+        <MudTd DataLabel="Кулдаун" Class="mud-text-secondary">@context.Cooldown s</MudTd>
+        <MudTd DataLabel="Статус" Style="text-align: right;">
+            <MudSwitch T="bool" @bind-Value="@context.IsEnabled" Color="Color.Primary" />
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@code {
+    private string _searchString = "";
+
+    class CommandItem { public string Trigger { get; set; } public string Response { get; set; } public string Permission { get; set; } public int Cooldown { get; set; } public bool IsEnabled { get; set; } }
+
+    private List<CommandItem> _commands = new()
+    {
+        new() { Trigger = "!discord", Response = "Join our discord: discord.gg/example", Permission = "everyone", Cooldown = 30, IsEnabled = true },
+        new() { Trigger = "!follow", Response = "Thanks for following!", Permission = "everyone", Cooldown = 60, IsEnabled = true },
+        new() { Trigger = "!ban", Response = "[System] User banned.", Permission = "moderator", Cooldown = 0, IsEnabled = false },
+    };
+
+    private bool FilterFunc(CommandItem element) => string.IsNullOrWhiteSpace(_searchString) || element.Trigger.Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+
+    private void ToggleCommand(CommandItem item, bool value)
+    {
+        item.IsEnabled = value;
+        Snackbar.Add(value ? "Команда включена" : "Команда отключена", Severity.Info);
+    }
+}

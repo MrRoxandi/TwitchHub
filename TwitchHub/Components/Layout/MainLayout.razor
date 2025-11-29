@@ -1,0 +1,75 @@
+﻿@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="@Resourses.ThemeConfig.StreamControlTheme" IsDarkMode="true" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Never" Elevation="0" Class="border-r border-solid border-dark-800" Style="border-right: 1px solid #27272a;">
+        <MudDrawerHeader Class="d-flex align-center gap-3 px-6 py-4">
+            <!-- Custom Logo SVG -->
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="40" height="40" rx="10" fill="#18181b" />
+                <rect x="2" y="2" width="36" height="36" rx="8" stroke="#27272a" stroke-width="2" />
+                <path d="M13 10L30 20L13 30V10Z" fill="url(#logo_gradient)" />
+                <path d="M22 15L13 30" stroke="#09090b" stroke-width="2" stroke-linecap="round" />
+                <defs>
+                    <linearGradient id="logo_gradient" x1="13" y1="10" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+                        <stop offset="1" stop-color="#9146FF" />
+                        <stop offset="1" stop-color="#06b6d4" />
+                    </linearGradient>
+                </defs>
+            </svg>
+            <div>
+                <MudText Typo="Typo.h6" Style="font-weight: 700; line-height: 1.2;">
+                    TTvAction<span style="color: #06b6d4;">Hub</span>
+                </MudText>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="letter-spacing: 1px; font-size: 10px; text-transform: uppercase;">Control Panel</MudText>
+            </div>
+        </MudDrawerHeader>
+
+        <MudNavMenu Class="px-3">
+            <MudText Typo="Typo.caption" Class="px-3 mt-4 mb-2 mud-text-secondary" Style="font-weight: 600; letter-spacing: 1px;">УПРАВЛЕНИЕ</MudText>
+            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Дашборд</MudNavLink>
+            <MudNavLink Href="/commands" Icon="@Icons.Material.Filled.Chat">Команды</MudNavLink>
+            <MudNavLink Href="/rewards" Icon="@Icons.Material.Filled.CardGiftcard">Награды</MudNavLink>
+
+            <MudText Typo="Typo.caption" Class="px-3 mt-6 mb-2 mud-text-secondary" Style="font-weight: 600; letter-spacing: 1px;">ДАННЫЕ</MudText>
+            <MudNavLink Href="/points" Icon="@Icons.Material.Filled.MonetizationOn">Экономика</MudNavLink>
+            <MudNavLink Href="/storage" Icon="@Icons.Material.Filled.Storage">Хранилище</MudNavLink>
+            <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Settings">Настройки</MudNavLink>
+        </MudNavMenu>
+
+        <div class="mt-auto p-4 border-t border-solid" style="border-color: #27272a;">
+            <div class="d-flex align-center gap-3">
+                <MudAvatar Image="https://picsum.photos/200" Size="Size.Medium" Class="ring-2 ring-primary" />
+                <div style="min-width: 0;">
+                    <MudText Typo="Typo.body2" Style="font-weight: 500;" Class="text-truncate">StreamerName</MudText>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">1,540 pts</MudText>
+                </div>
+                <MudIconButton Icon="@Icons.Material.Filled.Logout" Size="Size.Small" Class="ml-auto" Color="Color.Error" Variant="Variant.Text" />
+            </div>
+        </div>
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="py-8">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    private bool _drawerOpen = true;
+   
+}
+
+
