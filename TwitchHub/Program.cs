@@ -1,3 +1,6 @@
+using Lua;
+using Lua.Runtime;
+using Lua.Standard;
 using Microsoft.Extensions.Options;
 using MudBlazor.Services;
 using Serilog;
@@ -13,8 +16,8 @@ using TwitchLib.EventSub.Websockets.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog((context, services, config) =>
     config.ReadFrom.Configuration(context.Configuration)
-          .ReadFrom.Services(services)
-          .Enrich.FromLogContext());
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext());
 
 // Add MudBlazor services
 builder.Services.AddMudServices();
@@ -27,7 +30,6 @@ builder.Services.AddTwitchLibEventSubWebsockets();
 
 builder.Services.Configure<TwitchConfig>(builder.Configuration.GetSection(TwitchConfig.SectionName));
 
-builder.Services.AddSingleton<InputDispatcher>();
 builder.Services.AddSingleton<TwitchClient>(sp =>
 {
     var lf = sp.GetRequiredService<ILoggerFactory>();
@@ -38,10 +40,14 @@ builder.Services.AddSingleton<TwitchAPI>(sp =>
 {
     var lf = sp.GetRequiredService<ILoggerFactory>();
     var conf = sp.GetRequiredService<IOptions<TwitchConfig>>()!.Value;
-    var ta = new TwitchAPI(loggerFactory: lf);
-    ta.Settings.ClientId = conf.ClientId;
-    ta.Settings.Secret = conf.ClientSecret;
-    //ta.Settings.AccessToken = tokenprovider.GetAccessToken(); 
+    var ta = new TwitchAPI(lf)
+    {
+        Settings =
+        {
+            ClientId = conf.ClientId,
+            Secret = conf.ClientSecret
+        }
+    };
     return ta;
 });
 
@@ -58,7 +64,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    _ = app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    _ = app.UseExceptionHandler("/Error", true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     _ = app.UseHsts();
 }
@@ -71,4 +77,23 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+var state = LuaState.Create();
+state.Environment["TwitchLuaLib"] = app.Services.GetRequiredService<LuaTwitchLib>();
+state.OpenStandardLibraries();
+var r = Task.Delay(TimeSpan.FromSeconds(20))
+    .ContinueWith(async _ => await TestScript(state));
 app.Run();
+
+return;
+
+
+async Task TestScript(LuaState state)
+{
+    await state.DoStringAsync(
+    @"
+        local twitch = TwitchLuaLib
+        local bid = twitch:GetUserId('')
+        local date = twitch:GetFollowDate(bid)
+        print('From lua: ' .. date)
+    ");
+}

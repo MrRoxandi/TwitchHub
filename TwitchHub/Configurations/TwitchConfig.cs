@@ -6,4 +6,5 @@ public sealed class TwitchConfig
     public required string ClientId { get; init; }
     public required string ClientSecret { get; init; }
     public required string RedirectUrl { get; init; }
+    public required string Channel { get; init; }
 }
