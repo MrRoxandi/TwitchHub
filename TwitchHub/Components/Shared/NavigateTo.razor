@@ -1,0 +1,12 @@
+﻿@inject NavigationManager NavigationManager
+
+@code {
+
+    [Parameter]
+    public string? Endpoint { get; set; }
+
+    protected override void OnInitialized()
+    {
+        NavigationManager.NavigateTo(string.IsNullOrEmpty(Endpoint) ? "/" : Endpoint);
+    }
+}

@@ -1,0 +1,72 @@
+﻿@page "/twitch-auth"
+@using TwitchHub.Services.Backends
+@using Microsoft.AspNetCore.WebUtilities
+@inject NavigationManager NavManager
+@inject TwitchConfigurator TwitchConfigurator
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudCard>
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Авторизация Twitch</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (_isLoading)
+            {
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                <MudText>Проверяем код доступа...</MudText>
+            }
+            else if (_errorMessage != null)
+            {
+                <MudAlert Severity="Severity.Error">@_errorMessage</MudAlert>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="GoHome" Class="mt-4">Вернуться</MudButton>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Success">Успешно! Перенаправляем...</MudAlert>
+                <NavigateTo Endpoint="/"/>
+            }
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private bool _isLoading = true;
+    private string? _errorMessage;
+    [SupplyParameterFromQuery(Name = "code")]
+    private string? Code { get; set; }
+    [SupplyParameterFromQuery(Name = "error")]
+    private string? Error { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(Code))
+        {
+            try
+            {
+                var resp = await TwitchConfigurator.GenerateTokenFromCodeAsync(Code);
+                Snackbar.Add("Twitch подключен успешно!", Severity.Success);
+                _isLoading = false;
+            }
+            catch (Exception ex)
+            {
+                _errorMessage = $"Ошибка авторизации: {ex.Message}";
+                _isLoading = false;
+            }
+        }
+        else if (!string.IsNullOrEmpty(Error))
+        {
+            _errorMessage = $"Twitch вернул ошибку: {Error}";
+            _isLoading = false;
+        }
+        else
+        {
+            _errorMessage = "Неверный запрос. Код авторизации не найден.";
+            _isLoading = false;
+        }
+    }
+
+    private void GoHome() => NavManager.NavigateTo("/");
+}

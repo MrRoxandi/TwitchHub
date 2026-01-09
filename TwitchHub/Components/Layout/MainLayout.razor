@@ -41,16 +41,7 @@
             <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Settings">Настройки</MudNavLink>
         </MudNavMenu>
 
-        <div class="mt-auto p-4 border-t border-solid" style="border-color: #27272a;">
-            <div class="d-flex align-center gap-3">
-                <MudAvatar Image="https://picsum.photos/200" Size="Size.Medium" Class="ring-2 ring-primary" />
-                <div style="min-width: 0;">
-                    <MudText Typo="Typo.body2" Style="font-weight: 500;" Class="text-truncate">StreamerName</MudText>
-                    <MudText Typo="Typo.caption" Class="mud-text-secondary">1,540 pts</MudText>
-                </div>
-                <MudIconButton Icon="@Icons.Material.Filled.Logout" Size="Size.Small" Class="ml-auto" Color="Color.Error" Variant="Variant.Text" />
-            </div>
-        </div>
+        <UserProfileWidget/>
     </MudDrawer>
 
     <MudMainContent>
