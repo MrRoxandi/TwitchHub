@@ -43,7 +43,10 @@ public sealed partial class LuaHardwareLib
 
         KeyCodes = new LuaTable();
         foreach (var (name, code) in _keyboardMap)
+        {
             KeyCodes[name] = (int)code;
+            KeyCodes[name.ToLowerInvariant()] = (int)code;
+        }
     }
 
     // ================= KEYBOARD =================
@@ -155,20 +158,20 @@ public sealed partial class LuaHardwareLib
     }
 
     [LuaMember]
-    public void ScrollVertical(short delta)
-        => _simulator.SimulateMouseWheel(delta, MouseWheelScrollDirection.Vertical);
+    public void ScrollVertical(int delta)
+        => _simulator.SimulateMouseWheel((short)delta, MouseWheelScrollDirection.Vertical);
 
     [LuaMember]
-    public void ScrollHorizontal(short delta)
-        => _simulator.SimulateMouseWheel(delta, MouseWheelScrollDirection.Horizontal);
+    public void ScrollHorizontal(int delta)
+        => _simulator.SimulateMouseWheel((short)delta, MouseWheelScrollDirection.Horizontal);
 
     [LuaMember]
-    public void SetMousePosition(short x, short y)
-        => _simulator.SimulateMouseMovement(x, y);
+    public void SetMousePosition(int x, int y)
+        => _simulator.SimulateMouseMovement((short)x, (short)y);
 
     [LuaMember]
-    public void MoveMouse(short dx, short dy)
-        => _simulator.SimulateMouseMovementRelative(dx, dy);
+    public void MoveMouse(int dx, int dy)
+        => _simulator.SimulateMouseMovementRelative((short)dx, (short)dy);
 
     // ================= HELPERS =================
 
