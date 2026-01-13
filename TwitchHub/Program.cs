@@ -1,9 +1,11 @@
 using Lua;
-using Lua.Runtime;
 using Lua.Standard;
 using Microsoft.Extensions.Options;
 using MudBlazor.Services;
 using Serilog;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using TwitchHub.Components;
 using TwitchHub.Configurations;
 using TwitchHub.Lua.LuaLibs;
@@ -53,8 +55,24 @@ builder.Services.AddSingleton<TwitchAPI>(sp =>
 
 builder.Services.AddSingleton<TwitchConfigurator>();
 builder.Services.AddHostedService<ChatClient>();
-builder.Services.AddSingleton<LuaHadwareLib>();
+builder.Services.AddSingleton<LuaHardwareLib>();
 builder.Services.AddSingleton<LuaTwitchLib>();
+builder.Services.AddSingleton<LuaDataContainer>();
+builder.Services.AddSingleton<LuaStorageLib>();
+builder.Services.AddSingleton<LuaUtilsLib>();
+
+builder.Services.AddSingleton<JsonSerializerOptions>(sp =>
+{
+    var options = new JsonSerializerOptions
+    {
+        WriteIndented = true,
+        PropertyNameCaseInsensitive = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+    options.Converters.Add(new LuaValueJsonConverter());
+    options.Converters.Add(new JsonStringEnumConverter());
+    return options;
+});
 
 // Configure Kestrel from appsettings.json 
 builder.WebHost.ConfigureKestrel((context, options) => options.Configure(context.Configuration.GetSection("Kestrel")));
@@ -79,21 +97,24 @@ app.MapRazorComponents<App>()
 
 var state = LuaState.Create();
 state.Environment["TwitchLuaLib"] = app.Services.GetRequiredService<LuaTwitchLib>();
+state.Environment["StorageLuaLib"] = app.Services.GetRequiredService<LuaStorageLib>();
+state.Environment["HardwareLuaLib"] = app.Services.GetRequiredService<LuaHardwareLib>();
+state.Environment["UtilsLuaLib"] = app.Services.GetRequiredService<LuaUtilsLib>();
+
 state.OpenStandardLibraries();
-var r = Task.Delay(TimeSpan.FromSeconds(20))
-    .ContinueWith(async _ => await TestScript(state));
-app.Run();
+var res = await TestScript(state);
+
+//var r = Task.Delay(TimeSpan.FromSeconds(20))
+//    .ContinueWith(async _ => await TestScript(state));
+//app.Run();
 
 return;
 
-
-async Task TestScript(LuaState state)
-{
-    await state.DoStringAsync(
+static async Task<LuaValue[]> TestScript(LuaState state) => await state.DoStringAsync(
     @"
-        local twitch = TwitchLuaLib
-        local bid = twitch:GetUserId('')
-        local date = twitch:GetFollowDate(bid)
-        print('From lua: ' .. date)
+        local storage = StorageLuaLib
+        local utils = UtilsLuaLib
+        local table = storage:Get('test')
+        local res = utils:TableJoin(table)
+        print('Test from lua: ' .. res)
     ");
-}
