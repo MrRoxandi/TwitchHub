@@ -99,4 +99,154 @@ public sealed partial class LuaUtilsLib
     [LuaMember]
     public string TableToJson(LuaTable table)
         => LuaJsonConverter.ToJson(table)?.ToJsonString() ?? string.Empty;
+
+    // ================= DATETIME UTILS =================
+
+    [LuaMember]
+    public LuaValue GetCurrentTime() => DateTime.Now.Ticks;
+
+    [LuaMember]
+    public LuaValue GetCurrentTimeUtc() => DateTime.UtcNow.Ticks;
+
+    [LuaMember]
+    public LuaValue GetCurrentTimeOffset() => DateTimeOffset.Now.Ticks;
+
+    [LuaMember]
+    public LuaValue GetCurrentTimeOffsetUtc() => DateTimeOffset.UtcNow.Ticks;
+
+    [LuaMember]
+    public string FormatDateTime(long ticks, string format = "yyyy-MM-dd HH:mm:ss")
+    {
+        try
+        {
+            return new DateTime(ticks).ToString(format);
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    [LuaMember]
+    public string FormatDateTimeUtc(long ticks, string format = "yyyy-MM-dd HH:mm:ss")
+    {
+        try
+        {
+            return new DateTime(ticks, DateTimeKind.Utc).ToString(format);
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    [LuaMember]
+    public string FormatDateTimeOffset(long ticks, string format = "yyyy-MM-dd HH:mm:ss zzz")
+    {
+        try
+        {
+            return new DateTimeOffset(ticks, TimeSpan.Zero).ToString(format);
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    [LuaMember]
+    public LuaValue ParseDateTime(string dateString)
+    {
+        try
+        {
+            return DateTime.Parse(dateString).Ticks;
+        }
+        catch
+        {
+            return LuaValue.Nil;
+        }
+    }
+
+    [LuaMember]
+    public LuaValue ParseDateTimeOffset(string dateString)
+    {
+        try
+        {
+            return DateTimeOffset.Parse(dateString).Ticks;
+        }
+        catch
+        {
+            return LuaValue.Nil;
+        }
+    }
+
+    [LuaMember]
+    public LuaTable GetDateTimeComponents(long ticks)
+    {
+        var dt = new DateTime(ticks);
+        return new LuaTable
+        {
+            ["Year"] = dt.Year,
+            ["Month"] = dt.Month,
+            ["Day"] = dt.Day,
+            ["Hour"] = dt.Hour,
+            ["Minute"] = dt.Minute,
+            ["Second"] = dt.Second,
+            ["Millisecond"] = dt.Millisecond,
+            ["DayOfWeek"] = (int)dt.DayOfWeek,
+            ["DayOfYear"] = dt.DayOfYear
+        };
+    }
+
+    [LuaMember]
+    public LuaValue GetTimeDifference(long ticks1, long ticks2)
+    {
+        var dt1 = new DateTime(ticks1);
+        var dt2 = new DateTime(ticks2);
+        return Math.Abs((dt2 - dt1).Ticks);
+    }
+
+    [LuaMember]
+    public LuaTable GetTimeDifferenceComponents(long ticks1, long ticks2)
+    {
+        var dt1 = new DateTime(ticks1);
+        var dt2 = new DateTime(ticks2);
+        var diff = dt2 - dt1;
+        return new LuaTable
+        {
+            ["Days"] = diff.Days,
+            ["Hours"] = diff.Hours,
+            ["Minutes"] = diff.Minutes,
+            ["Seconds"] = diff.Seconds,
+            ["Milliseconds"] = diff.Milliseconds,
+            ["TotalSeconds"] = diff.TotalSeconds,
+            ["TotalMinutes"] = diff.TotalMinutes,
+            ["TotalHours"] = diff.TotalHours,
+            ["TotalDays"] = diff.TotalDays
+        };
+    }
+
+    [LuaMember]
+    public LuaValue AddSeconds(long ticks, double seconds)
+        => new DateTime(ticks).AddSeconds(seconds).Ticks;
+
+    [LuaMember]
+    public LuaValue AddMinutes(long ticks, double minutes)
+        => new DateTime(ticks).AddMinutes(minutes).Ticks;
+
+    [LuaMember]
+    public LuaValue AddHours(long ticks, double hours)
+        => new DateTime(ticks).AddHours(hours).Ticks;
+
+    [LuaMember]
+    public LuaValue AddDays(long ticks, double days)
+        => new DateTime(ticks).AddDays(days).Ticks;
+
+    [LuaMember]
+    public bool IsAfter(long ticks1, long ticks2) => ticks1 > ticks2;
+
+    [LuaMember]
+    public bool IsBefore(long ticks1, long ticks2) => ticks1 < ticks2;
+
+    [LuaMember]
+    public bool IsEqual(long ticks1, long ticks2) => ticks1 == ticks2;
 }
