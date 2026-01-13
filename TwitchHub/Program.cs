@@ -3,6 +3,7 @@ using Lua.Standard;
 using Microsoft.Extensions.Options;
 using MudBlazor.Services;
 using Serilog;
+using SharpHook;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -30,7 +31,8 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddTwitchLibEventSubWebsockets();
 
-builder.Services.Configure<TwitchConfig>(builder.Configuration.GetSection(TwitchConfig.SectionName));
+builder.Services.Configure<TwitchConfiguration>(builder.Configuration.GetSection(TwitchConfiguration.SectionName));
+builder.Services.Configure<LuaMediaServiceConfiguration>(builder.Configuration.GetSection(LuaMediaServiceConfiguration.SectionName));
 
 builder.Services.AddSingleton<TwitchClient>(sp =>
 {
@@ -41,7 +43,7 @@ builder.Services.AddSingleton<TwitchClient>(sp =>
 builder.Services.AddSingleton<TwitchAPI>(sp =>
 {
     var lf = sp.GetRequiredService<ILoggerFactory>();
-    var conf = sp.GetRequiredService<IOptions<TwitchConfig>>()!.Value;
+    var conf = sp.GetRequiredService<IOptions<TwitchConfiguration>>()!.Value;
     var ta = new TwitchAPI(lf)
     {
         Settings =
@@ -54,10 +56,12 @@ builder.Services.AddSingleton<TwitchAPI>(sp =>
 });
 
 builder.Services.AddSingleton<TwitchConfigurator>();
+builder.Services.AddSingleton<LuaDataContainer>();
 builder.Services.AddHostedService<ChatClient>();
+builder.Services.AddSingleton<LuaMediaService>();
+
 builder.Services.AddSingleton<LuaHardwareLib>();
 builder.Services.AddSingleton<LuaTwitchLib>();
-builder.Services.AddSingleton<LuaDataContainer>();
 builder.Services.AddSingleton<LuaStorageLib>();
 builder.Services.AddSingleton<LuaUtilsLib>();
 
@@ -102,7 +106,14 @@ state.Environment["HardwareLuaLib"] = app.Services.GetRequiredService<LuaHardwar
 state.Environment["UtilsLuaLib"] = app.Services.GetRequiredService<LuaUtilsLib>();
 
 state.OpenStandardLibraries();
-var res = await TestScript(state);
+
+var lms = app.Services.GetRequiredService<LuaMediaService>();
+lms.Add(@"https://eu.hitmo-top.com/get/music/20250816/Lady_Gaga_-_Judas_79457310.mp3");
+lms.Add(@"https://river-1.rutube.ru/hls-vod/LgkwVS2R6yca-bq5Mxu87g/1768896826/3326/0x5000c500c7c4390b/8b9221c66b10453e876d32b1f6c05553.mp4.m3u8?i=1280x720_3022");
+await Task.Delay(TimeSpan.FromSeconds(10));
+lms.Skip();
+await Task.Delay(TimeSpan.FromSeconds(40));
+//var res = await TestScript(state);
 
 //var r = Task.Delay(TimeSpan.FromSeconds(20))
 //    .ContinueWith(async _ => await TestScript(state));
@@ -114,7 +125,7 @@ static async Task<LuaValue[]> TestScript(LuaState state) => await state.DoString
     @"
         local storage = StorageLuaLib
         local utils = UtilsLuaLib
-        local table = storage:Get('test')
-        local res = utils:TableJoin(table)
+        local table = storage:Get('cringe')
+        local res = utils:TableToJson(table)
         print('Test from lua: ' .. res)
     ");
