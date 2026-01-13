@@ -12,13 +12,13 @@ namespace TwitchHub.Lua.LuaLibs;
 [LuaObject]
 public sealed partial class LuaTwitchLib(
     TwitchClient client,
-    IOptions<TwitchConfig> config,
+    IOptions<TwitchConfiguration> config,
     TwitchAPI twitchApi,
     ILogger<LuaTwitchLib> logger
     )
 {
     private readonly TwitchClient _client = client;
-    private readonly TwitchConfig _config = config.Value;
+    private readonly TwitchConfiguration _config = config.Value;
     private readonly TwitchAPI _api = twitchApi;
     private readonly ILogger<LuaTwitchLib> _logger = logger;
 

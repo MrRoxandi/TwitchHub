@@ -12,7 +12,7 @@ public class TwitchConfigurator
 {
 
     private readonly ILogger<TwitchConfigurator> _logger;
-    private readonly TwitchConfig _configuration;
+    private readonly TwitchConfiguration _configuration;
     private readonly TwitchAPI _api;
 
     public string GetAuthorizationLink() => _api.Auth.GetAuthorizationCodeUrl(_configuration.RedirectUrl, _scopes);
@@ -63,7 +63,7 @@ public class TwitchConfigurator
         AuthScopes.Whisper_Read
         ];
 
-    public TwitchConfigurator(ILogger<TwitchConfigurator> logger, TwitchAPI api, IOptions<TwitchConfig> configuration)
+    public TwitchConfigurator(ILogger<TwitchConfigurator> logger, TwitchAPI api, IOptions<TwitchConfiguration> configuration)
     {
         _logger = logger;
         _configuration = configuration.Value;
