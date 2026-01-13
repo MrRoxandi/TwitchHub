@@ -1,4 +1,5 @@
 ﻿using Lua;
+using TwitchHub.Services.Backends;
 
 namespace TwitchHub.Lua.LuaLibs;
 
@@ -90,7 +91,12 @@ public sealed partial class LuaUtilsLib
     }
 
     [LuaMember]
-    public string TableJoin(LuaTable table, string sep = ", ") => IsLuaArray(table)
+    public string TableJoin(LuaTable table, string sep = ", ")
+        => IsLuaArray(table)
             ? string.Join(sep, table.Select(e => e.Value.ToString()))
             : string.Join(sep, table.Select(e => $"[{e.Key}]: {e.Value}"));
+
+    [LuaMember]
+    public string TableToJson(LuaTable table)
+        => LuaJsonConverter.ToJson(table)?.ToJsonString() ?? string.Empty;
 }
