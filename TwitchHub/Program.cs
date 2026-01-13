@@ -1,5 +1,6 @@
 using Lua;
 using Lua.Standard;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MudBlazor.Services;
 using Serilog;
@@ -11,6 +12,7 @@ using TwitchHub.Components;
 using TwitchHub.Configurations;
 using TwitchHub.Lua.LuaLibs;
 using TwitchHub.Services.Backends;
+using TwitchHub.Services.Backends.Data;
 using TwitchHub.Services.Twitch;
 using TwitchLib.Api;
 using TwitchLib.Client;
@@ -59,11 +61,15 @@ builder.Services.AddSingleton<TwitchConfigurator>();
 builder.Services.AddSingleton<LuaDataContainer>();
 builder.Services.AddHostedService<ChatClient>();
 builder.Services.AddSingleton<LuaMediaService>();
+builder.Services.AddDbContextFactory<PointsDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString(PointsDbContext.ConnectionString)));
+builder.Services.AddSingleton<LuaPointsService>();
 
 builder.Services.AddSingleton<LuaHardwareLib>();
 builder.Services.AddSingleton<LuaTwitchLib>();
 builder.Services.AddSingleton<LuaStorageLib>();
 builder.Services.AddSingleton<LuaUtilsLib>();
+builder.Services.AddSingleton<LuaPointsLib>();
 
 builder.Services.AddSingleton<JsonSerializerOptions>(sp =>
 {
@@ -82,7 +88,18 @@ builder.Services.AddSingleton<JsonSerializerOptions>(sp =>
 builder.WebHost.ConfigureKestrel((context, options) => options.Configure(context.Configuration.GetSection("Kestrel")));
 
 var app = builder.Build();
-
+try
+{
+    var factory = app.Services.GetRequiredService<IDbContextFactory<PointsDbContext>>();
+    using var context = await factory.CreateDbContextAsync();
+    await context.Database.MigrateAsync();
+    app.Logger.LogInformation("Database migration/check completed successfully.");
+}
+catch (Exception ex)
+{
+    app.Logger.LogError(ex, "An error occurred while migrating or seeding the database.");
+    return;
+}
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
