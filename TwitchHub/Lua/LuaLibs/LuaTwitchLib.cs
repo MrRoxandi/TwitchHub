@@ -1,8 +1,10 @@
 ﻿using Lua;
 using Microsoft.Extensions.Options;
+using Serilog;
 using TwitchHub.Configurations;
 using TwitchLib.Api;
 using TwitchLib.Api.Helix.Models.Channels.GetChannelFollowers;
+using TwitchLib.Api.Helix.Models.Streams.GetStreams;
 using TwitchLib.Api.Helix.Models.Users.GetUsers;
 using TwitchLib.Client;
 using TwitchLib.Client.Models;
@@ -92,7 +94,39 @@ public sealed partial class LuaTwitchLib(
         var follower = await GetFollower(userId);
         return follower is null
             ? -1
-            : DateTimeOffset.Parse(follower.FollowedAt).ToUnixTimeSeconds();
+            : DateTimeOffset.Parse(follower.FollowedAt).Ticks;
+    }
+
+    // ================= STREAM =================
+    [LuaMember]
+    public async Task<string> GetStreamTitle()
+    {
+        var broadcasterId = await GetBroadcasterId();
+        var stream = await GetCurrentStream(broadcasterId);
+        return stream.Title;
+    }
+    [LuaMember]
+    public async Task<string> GetStreamGameName()
+    {
+        var broadcasterId = await GetBroadcasterId();
+        var stream = await GetCurrentStream(broadcasterId);
+        return stream.GameName;
+    }
+
+    [LuaMember]
+    public async Task<long> GetStreamStartedAt()
+    {
+        var broadcasterId = await GetBroadcasterId();
+        var stream = await GetCurrentStream(broadcasterId);
+        return new DateTimeOffset(stream.StartedAt).Ticks;
+    }
+
+    [LuaMember]
+    public async Task<int> GetStreamViewers()
+    {
+        var broadcasterId = await GetBroadcasterId();
+        var stream = await GetCurrentStream(broadcasterId);
+        return stream.ViewerCount;
     }
 
     // ================= INTERNAL =================
@@ -127,6 +161,13 @@ public sealed partial class LuaTwitchLib(
         var response = await _api.Helix.Channels
             .GetChannelFollowersAsync(broadcasterId, userId);
         return response.Data.FirstOrDefault();
+    }
+
+    private async Task<TwitchLib.Api.Helix.Models.Streams.GetStreams.Stream> GetCurrentStream(string userId)
+    {
+        var streams = await _api.Helix.Streams.GetStreamsAsync(userIds: [userId]);
+        return streams.Streams.FirstOrDefault()
+            ?? throw new Exception($"Not found stream for user : {userId}");
     }
 
     private void EnsureChatReady()
