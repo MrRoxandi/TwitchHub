@@ -1,12 +1,12 @@
 using Lua;
 using Lua.Standard;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MudBlazor.Services;
 using Serilog;
 using SharpHook;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using TwitchHub.Components;
 using TwitchHub.Configurations;
@@ -14,6 +14,7 @@ using TwitchHub.Lua.LuaLibs;
 using TwitchHub.Services.Backends;
 using TwitchHub.Services.Backends.Data;
 using TwitchHub.Services.Twitch;
+using TwitchHub.Services.Twitch.Data;
 using TwitchLib.Api;
 using TwitchLib.Client;
 using TwitchLib.EventSub.Websockets.Extensions;
@@ -31,10 +32,32 @@ builder.Services.AddMudServices();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddTwitchLibEventSubWebsockets();
 
 builder.Services.Configure<TwitchConfiguration>(builder.Configuration.GetSection(TwitchConfiguration.SectionName));
 builder.Services.Configure<LuaMediaServiceConfiguration>(builder.Configuration.GetSection(LuaMediaServiceConfiguration.SectionName));
+
+// -------------- TWITCH --------------
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(
+        Path.Combine(builder.Environment.ContentRootPath, "keys")
+        )
+    )
+    .SetApplicationName("TwitchHub");
+
+builder.Services.AddSingleton<FileTwitchTokenStorage>();
+
+builder.Services.AddSingleton<TwitchAPI>(sp =>
+{
+    var lf = sp.GetRequiredService<ILoggerFactory>();
+    var conf = sp.GetRequiredService<IOptions<TwitchConfiguration>>()!.Value;
+    return new TwitchAPI(lf)
+    {
+        Settings = { ClientId = conf.ClientId, Secret = conf.ClientSecret }
+    };
+});
+
+builder.Services.AddSingleton<TwitchTokenProvider>();
 
 builder.Services.AddSingleton<TwitchClient>(sp =>
 {
@@ -42,35 +65,20 @@ builder.Services.AddSingleton<TwitchClient>(sp =>
     return new TwitchClient(loggerFactory: lf);
 });
 
-builder.Services.AddSingleton<TwitchAPI>(sp =>
-{
-    var lf = sp.GetRequiredService<ILoggerFactory>();
-    var conf = sp.GetRequiredService<IOptions<TwitchConfiguration>>()!.Value;
-    var ta = new TwitchAPI(lf)
-    {
-        Settings =
-        {
-            ClientId = conf.ClientId,
-            Secret = conf.ClientSecret
-        }
-    };
-    return ta;
-});
+builder.Services.AddHostedService<TwitchChatClient>();
 
+builder.Services.AddTwitchLibEventSubWebsockets();
+builder.Services.AddHostedService<TwitchEventSub>();
 builder.Services.AddSingleton<TwitchConfigurator>();
-builder.Services.AddSingleton<LuaDataContainer>();
-builder.Services.AddHostedService<ChatClient>();
-builder.Services.AddSingleton<LuaMediaService>();
+
+// -------------- LUA SERVICES --------------
+
 builder.Services.AddDbContextFactory<PointsDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString(PointsDbContext.ConnectionString)));
+
+builder.Services.AddSingleton<LuaDataContainer>();
+builder.Services.AddSingleton<LuaMediaService>();
 builder.Services.AddSingleton<LuaPointsService>();
-
-builder.Services.AddSingleton<LuaHardwareLib>();
-builder.Services.AddSingleton<LuaTwitchLib>();
-builder.Services.AddSingleton<LuaStorageLib>();
-builder.Services.AddSingleton<LuaUtilsLib>();
-builder.Services.AddSingleton<LuaPointsLib>();
-
 builder.Services.AddSingleton<JsonSerializerOptions>(sp =>
 {
     var options = new JsonSerializerOptions
@@ -83,6 +91,14 @@ builder.Services.AddSingleton<JsonSerializerOptions>(sp =>
     options.Converters.Add(new JsonStringEnumConverter());
     return options;
 });
+
+// -------------- LUA LIBS --------------
+
+builder.Services.AddSingleton<LuaHardwareLib>();
+builder.Services.AddSingleton<LuaTwitchLib>();
+builder.Services.AddSingleton<LuaStorageLib>();
+builder.Services.AddSingleton<LuaUtilsLib>();
+builder.Services.AddSingleton<LuaPointsLib>();
 
 // Configure Kestrel from appsettings.json 
 builder.WebHost.ConfigureKestrel((context, options) => options.Configure(context.Configuration.GetSection("Kestrel")));

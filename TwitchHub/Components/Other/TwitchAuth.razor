@@ -1,6 +1,7 @@
 ﻿@page "/twitch-auth"
-@using TwitchHub.Services.Backends
 @using Microsoft.AspNetCore.WebUtilities
+@using TwitchHub.Services.Backends
+@using TwitchHub.Services.Twitch
 @inject NavigationManager NavManager
 @inject TwitchConfigurator TwitchConfigurator
 @inject ISnackbar Snackbar
@@ -46,7 +47,7 @@
         {
             try
             {
-                var resp = await TwitchConfigurator.GenerateTokenFromCodeAsync(Code);
+                await TwitchConfigurator.CompleteAuthorizationAsync(Code);
                 Snackbar.Add("Twitch подключен успешно!", Severity.Success);
                 _isLoading = false;
             }

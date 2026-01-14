@@ -1,39 +1,44 @@
 ﻿using Microsoft.Extensions.Options;
-using System.Diagnostics;
-using System.Net;
 using TwitchHub.Configurations;
+using TwitchHub.Services.Twitch.Data;
 using TwitchLib.Api;
-using TwitchLib.Api.Auth;
 using TwitchLib.Api.Core.Enums;
 
-namespace TwitchHub.Services.Backends;
+namespace TwitchHub.Services.Twitch;
 
-public class TwitchConfigurator
+public class TwitchConfigurator(
+    ILogger<TwitchConfigurator> logger,
+    IOptions<TwitchConfiguration> configuration,
+    FileTwitchTokenStorage ftts,
+    TwitchTokenProvider provider,
+    TwitchAPI api)
 {
 
-    private readonly ILogger<TwitchConfigurator> _logger;
-    private readonly TwitchConfiguration _configuration;
-    private readonly TwitchAPI _api;
-
+    private readonly TwitchConfiguration _configuration = configuration.Value;
+    private readonly ILogger<TwitchConfigurator> _logger = logger;
+    private readonly FileTwitchTokenStorage _fileStorage = ftts;
+    private readonly TwitchTokenProvider _tokenProvider = provider;
+    private readonly TwitchAPI _api = api;
     public string GetAuthorizationLink() => _api.Auth.GetAuthorizationCodeUrl(_configuration.RedirectUrl, _scopes);
 
-    public async Task<AuthCodeResponse> GenerateTokenFromCodeAsync(string code)
+    public async Task CompleteAuthorizationAsync(string code, CancellationToken ct = default)
     {
         var response = await _api.Auth.GetAccessTokenFromCodeAsync(
             code,
             _configuration.ClientSecret,
-            _configuration.RedirectUrl
+            _configuration.RedirectUrl,
+            _configuration.ClientId
         ) ?? throw new Exception("Failed to exchange code for token. Twitch API returned null.");
 
-        // TODO: Handle token storage here
-        // response contains AccessToken, RefreshToken that should be stored in a secure place for future use
-        // for simple case we can use just encrypted Json storage
+        if (response == null)
+            throw new Exception("Failed to get token.");
 
-        _api.Settings.AccessToken = response.AccessToken;
+        var store = TwitchTokenStore.From(response);
+
+        await _fileStorage.SaveAsync(store, ct);
+        _tokenProvider.SetNewToken(store);
 
         _logger.LogInformation("Tokens generated successfully. Expires in: {Expires} seconds.", response.ExpiresIn);
-
-        return response;
     }
 
     // May need some adjustments
@@ -62,14 +67,4 @@ public class TwitchConfigurator
         AuthScopes.Whisper_Edit,
         AuthScopes.Whisper_Read
         ];
-
-    public TwitchConfigurator(ILogger<TwitchConfigurator> logger, TwitchAPI api, IOptions<TwitchConfiguration> configuration)
-    {
-        _logger = logger;
-        _configuration = configuration.Value;
-        _api = api;
-        // TODO: correct tokens initialization 
-        // Need to add refresh token handling later
-        // Also chipered json data storage where will be accectoken and refresh token stored for future use
-    }
 }
