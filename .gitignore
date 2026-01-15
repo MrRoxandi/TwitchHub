@@ -362,3 +362,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /TwitchHub/keys
+/TwitchHub/data
+/TwitchHub/testconfig.lua
+*.dat
