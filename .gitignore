@@ -365,3 +365,4 @@ FodyWeavers.xsd
 /TwitchHub/data
 /TwitchHub/testconfig.lua
 *.dat
+/TwitchHub/configs/reactions
