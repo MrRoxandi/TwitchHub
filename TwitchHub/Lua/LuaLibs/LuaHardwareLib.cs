@@ -1,12 +1,15 @@
 ﻿using Lua;
 using SharpHook;
 using SharpHook.Data;
+using TwitchHub.Services.Hardware;
 
 namespace TwitchHub.Lua.LuaLibs;
 
 [LuaObject]
 public sealed partial class LuaHardwareLib
 {
+    private readonly LuaBlockedKeys _luaBlocked;
+
     private static readonly Dictionary<string, KeyCode> _keyboardMap =
         Enum.GetValues<KeyCode>()
             .ToDictionary(k => k.ToString()[2..], StringComparer.OrdinalIgnoreCase);
@@ -34,10 +37,10 @@ public sealed partial class LuaHardwareLib
     [LuaMember]
     public readonly LuaTable KeyCodes;
 
-    public LuaHardwareLib(ILogger<LuaHardwareLib> logger)
+    public LuaHardwareLib(ILogger<LuaHardwareLib> logger, LuaBlockedKeys lbk)
     {
         _logger = logger;
-
+        _luaBlocked = lbk;
         _minKey = (int)_keyboardMap.Values.Min();
         _maxKey = (int)_keyboardMap.Values.Max();
 
@@ -64,6 +67,12 @@ public sealed partial class LuaHardwareLib
         return _keyboardMap.TryGetValue(span.ToString(), out var code)
             ? (int)code
             : (int)KeyCode.VcUndefined;
+    }
+    [LuaMember]
+    public string KeyCodeToString(int keycode)
+    {
+        var code = NormalizeKey(keycode);
+        return code.ToString();
     }
 
     [LuaMember]
@@ -107,6 +116,34 @@ public sealed partial class LuaHardwareLib
         _logger.LogDebug("TypeText ({text}): {result}", text, result);
     }
 
+    [LuaMember]
+    public bool KeyIsBlocked(int keyCode)
+    {
+        var code = NormalizeKey(keyCode);
+        return _luaBlocked.IsBlocked(code);
+    }
+
+    [LuaMember]
+    public void KeyBlock(int keyCode)
+    {
+        var code = NormalizeKey(keyCode);
+        _luaBlocked.Block(code);
+    }
+
+    [LuaMember]
+    public void KeyUnBlock(int keyCode)
+    {
+        var code = NormalizeKey(keyCode);
+        _luaBlocked.Unblock(code);
+    }
+
+    [LuaMember]
+    public void KeyToggle(int keyCode)
+    {
+        var code = NormalizeKey(keyCode);
+        _luaBlocked.ToggleBlock(code);
+    }
+
     // ================= MOUSE =================
 
     [LuaMember]
@@ -114,6 +151,12 @@ public sealed partial class LuaHardwareLib
         => _mouseMap.TryGetValue(button?.Trim() ?? "", out var b)
             ? (int)b
             : (int)MouseButton.NoButton;
+    [LuaMember]
+    public string ButtonToString(int button)
+    {
+        var code = NormalizeButton(button);
+        return code.ToString();
+    }
 
     [LuaMember]
     public void MouseDown(int buttonCode)
@@ -172,6 +215,34 @@ public sealed partial class LuaHardwareLib
     [LuaMember]
     public void MoveMouse(int dx, int dy)
         => _simulator.SimulateMouseMovementRelative((short)dx, (short)dy);
+
+    [LuaMember]
+    public bool ButtonIsBlocked(int keyCode)
+    {
+        var code = NormalizeButton(keyCode);
+        return _luaBlocked.IsBlocked(code);
+    }
+
+    [LuaMember]
+    public void ButtonBlock(int keyCode)
+    {
+        var code = NormalizeButton(keyCode);
+        _luaBlocked.Block(code);
+    }
+
+    [LuaMember]
+    public void ButtonUnBlock(int keyCode)
+    {
+        var code = NormalizeButton(keyCode);
+        _luaBlocked.Unblock(code);
+    }
+
+    [LuaMember]
+    public void ButtonToggle(int keyCode)
+    {
+        var code = NormalizeKey(keyCode);
+        _luaBlocked.ToggleBlock(code);
+    }
 
     // ================= HELPERS =================
 
