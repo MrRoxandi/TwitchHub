@@ -11,8 +11,10 @@ using System.Text.Json.Serialization;
 using TwitchHub.Components;
 using TwitchHub.Configurations;
 using TwitchHub.Lua.LuaLibs;
+using TwitchHub.Services;
 using TwitchHub.Services.Backends;
 using TwitchHub.Services.Backends.Data;
+using TwitchHub.Services.LuaMedia;
 using TwitchHub.Services.Twitch;
 using TwitchHub.Services.Twitch.Data;
 using TwitchLib.Api;
@@ -31,7 +33,6 @@ builder.Services.AddMudServices();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-
 
 builder.Services.Configure<TwitchConfiguration>(builder.Configuration.GetSection(TwitchConfiguration.SectionName));
 builder.Services.Configure<LuaMediaServiceConfiguration>(builder.Configuration.GetSection(LuaMediaServiceConfiguration.SectionName));
@@ -99,6 +100,7 @@ builder.Services.AddSingleton<LuaTwitchLib>();
 builder.Services.AddSingleton<LuaStorageLib>();
 builder.Services.AddSingleton<LuaUtilsLib>();
 builder.Services.AddSingleton<LuaPointsLib>();
+builder.Services.AddSingleton<LuaMediaLib>();
 
 // Configure Kestrel from appsettings.json 
 builder.WebHost.ConfigureKestrel((context, options) => options.Configure(context.Configuration.GetSection("Kestrel")));
@@ -137,16 +139,15 @@ state.Environment["TwitchLuaLib"] = app.Services.GetRequiredService<LuaTwitchLib
 state.Environment["StorageLuaLib"] = app.Services.GetRequiredService<LuaStorageLib>();
 state.Environment["HardwareLuaLib"] = app.Services.GetRequiredService<LuaHardwareLib>();
 state.Environment["UtilsLuaLib"] = app.Services.GetRequiredService<LuaUtilsLib>();
-
+state.Environment["MediaLuaLib"] = app.Services.GetRequiredService<LuaMediaLib>();
 state.OpenStandardLibraries();
 
 var lms = app.Services.GetRequiredService<LuaMediaService>();
-lms.Add(@"https://eu.hitmo-top.com/get/music/20250816/Lady_Gaga_-_Judas_79457310.mp3");
-lms.Add(@"https://river-1.rutube.ru/hls-vod/LgkwVS2R6yca-bq5Mxu87g/1768896826/3326/0x5000c500c7c4390b/8b9221c66b10453e876d32b1f6c05553.mp4.m3u8?i=1280x720_3022");
-await Task.Delay(TimeSpan.FromSeconds(10));
-lms.Skip();
-await Task.Delay(TimeSpan.FromSeconds(40));
-//var res = await TestScript(state);
+var channels = string.Join(", ", lms.Channels);
+app.Logger.LogInformation("All channesl: {channels}", channels);
+var res = await TestScript(state);
+
+await Task.Delay(TimeSpan.FromSeconds(30));
 
 //var r = Task.Delay(TimeSpan.FromSeconds(20))
 //    .ContinueWith(async _ => await TestScript(state));
@@ -156,9 +157,11 @@ return;
 
 static async Task<LuaValue[]> TestScript(LuaState state) => await state.DoStringAsync(
     @"
-        local storage = StorageLuaLib
+        local media = MediaLuaLib
         local utils = UtilsLuaLib
-        local table = storage:Get('cringe')
-        local res = utils:TableToJson(table)
-        print('Test from lua: ' .. res)
+        local channel = 'Main'
+        media:Add(channel, 'C:/Users/lyamcev/Downloads/Lady_Gaga_-_Judas_79457310.mp3') 
+        media:SetVolume(channel, 30)
+        utils:Delay(4 * 1000)
+        media:Add('stream', 'C:/Users/lyamcev/Downloads/Britney Manson - FASHION (Audio) [7af0d1a10b8d35e2453784bc215ab6ea].mp4')
     ");

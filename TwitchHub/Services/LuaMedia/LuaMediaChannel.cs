@@ -1,26 +1,38 @@
 ﻿using LibVLCSharp.Shared;
-using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 using TwitchHub.Configurations;
 
-namespace TwitchHub.Services.Backends;
+namespace TwitchHub.Services.LuaMedia;
 
-public sealed class LuaMediaService : IDisposable
+public sealed class LuaMediaChannel : IDisposable
 {
-    private readonly LuaMediaServiceConfiguration _configuration;
+    public string Name { get; }
 
-    private readonly LibVLC _libVlc;
+    private readonly LuaMediaChannelConfiguration _configuration;
+    private readonly LibVLC _libVLC;
     private readonly MediaPlayer _player;
-    private readonly ConcurrentQueue<Media> _mediaList;
-    private readonly Lock _sync;
-    private bool _disposed;
+    private readonly ConcurrentQueue<Media> _queue = [];
+    private readonly Lock _sync = new();
+    private bool _disposed = false;
+
+    // ================= EVENTS =================
+
+    public event EventHandler<MediaAddedEventArgs>? OnAdded;
+    public event EventHandler<MediaStartedEventArgs>? OnStarted;
+    public event EventHandler<MediaSkippedEventArgs>? OnSkipped;
+    public event EventHandler<MediaPausedEventArgs>? OnPaused; 
+    public event EventHandler<MediaStoppedEventArgs>? OnStopped;
+    public event EventHandler<MediaEndReachedEventArgs>? OnEndReached;
+    public event EventHandler<QueueFinishedEventArgs>? OnQueueFinished;
+    public event EventHandler<MediaErrorEventArgs>? OnError;
 
     // ================= STATE =================
     public string CurrentItem { get; private set; } = string.Empty;
     public bool IsPlaying => _player.IsPlaying;
     public bool IsPaused => _player.State == VLCState.Paused;
     public bool IsStopped => _player.State == VLCState.Stopped;
-    public int QueueCount => _mediaList.Count;
+    public int QueueCount => _queue.Count;
+
     public int Volume
     {
         get => _player.Volume;
@@ -33,27 +45,13 @@ public sealed class LuaMediaService : IDisposable
         set => SetSpeed(value);
     }
 
-    // ================= EVENTS =================
-    public event EventHandler<MediaAddedEventArgs>? OnMediaAdded;
-    public event EventHandler<MediaStartedEventArgs>? OnMediaStarted;
-    public event EventHandler<MediaSkippedEventArgs>? OnMediaSkipped;
-    public event EventHandler<MediaPausedEventArgs>? OnMediaPaused;
-    public event EventHandler<MediaStoppedEventArgs>? OnMediaStopped;
-    public event EventHandler<MediaEndReachedEventArgs>? OnMediaEndReached;
-    public event EventHandler<QueueFinishedEventArgs>? QueueFinished;
-    public event EventHandler<MediaErrorEventArgs>? OnError;
-
     // ================= INIT =================
-
-    public LuaMediaService(IOptions<LuaMediaServiceConfiguration> options)
+    public LuaMediaChannel(string name, LuaMediaChannelConfiguration config, LibVLC libVLC)
     {
-        Core.Initialize();
-        _configuration = options.Value;
-        _libVlc = new LibVLC();
-        _player = new MediaPlayer(_libVlc);
-        _mediaList = [];
-        _sync = new();
-        _disposed = false;
+        Name = name;
+        _configuration = config;
+        _libVLC = libVLC;
+        _player = new(_libVLC);
         HookEvents();
     }
 
@@ -67,25 +65,24 @@ public sealed class LuaMediaService : IDisposable
     }
 
     // ================= EVENT HANDLERS =================
-    private void Player_Playing(object? sender, EventArgs e) => OnMediaStarted?.Invoke(this, new MediaStartedEventArgs(CurrentItem));
+    private void Player_Playing(object? sender, EventArgs e) => OnStarted?.Invoke(this, new MediaStartedEventArgs(Name, CurrentItem));
 
-    private void Player_Paused(object? sender, EventArgs e) => OnMediaPaused?.Invoke(this, new MediaPausedEventArgs(CurrentItem, _player.Time));
+    private void Player_Paused(object? sender, EventArgs e) => OnPaused?.Invoke(this, new MediaPausedEventArgs(Name, CurrentItem, _player.Time));
 
-    private void Player_Stopped(object? sender, EventArgs e) => OnMediaStopped?.Invoke(this, new MediaStoppedEventArgs(CurrentItem));
+    private void Player_Stopped(object? sender, EventArgs e) => OnStopped?.Invoke(this, new MediaStoppedEventArgs(Name, CurrentItem));
 
     private void Player_EndReached(object? sender, EventArgs e)
     {
-        OnMediaEndReached?.Invoke(this, new MediaEndReachedEventArgs(CurrentItem));
+        OnEndReached?.Invoke(this, new MediaEndReachedEventArgs(Name, CurrentItem));
         PlayNext();
     }
 
     private void Player_EncounteredError(object? sender, EventArgs e)
     {
-        var error = new MediaErrorEventArgs(CurrentItem, new InvalidOperationException("Media player error"));
+        var error = new MediaErrorEventArgs(Name, CurrentItem, new InvalidOperationException("Media player error"));
         OnError?.Invoke(this, error);
         PlayNext();
     }
-
     // ================= QUEUE =================
 
     public void Add(string pathOrUrl)
@@ -95,9 +92,9 @@ public sealed class LuaMediaService : IDisposable
         try
         {
             var media = CreateMedia(pathOrUrl);
-            _mediaList.Enqueue(media);
+            _queue.Enqueue(media);
 
-            OnMediaAdded?.Invoke(this, new MediaAddedEventArgs(pathOrUrl, QueueCount));
+            OnAdded?.Invoke(this, new MediaAddedEventArgs(Name, pathOrUrl, QueueCount));
 
             lock (_sync)
             {
@@ -107,7 +104,7 @@ public sealed class LuaMediaService : IDisposable
         }
         catch (Exception ex)
         {
-            OnError?.Invoke(this, new MediaErrorEventArgs(pathOrUrl, ex));
+            OnError?.Invoke(this, new MediaErrorEventArgs(Name, pathOrUrl, ex));
         }
     }
 
@@ -147,7 +144,7 @@ public sealed class LuaMediaService : IDisposable
         {
             var skippedItem = CurrentItem;
             _player.Stop();
-            OnMediaSkipped?.Invoke(this, new MediaSkippedEventArgs(CurrentItem));
+            OnSkipped?.Invoke(this, new MediaSkippedEventArgs(Name, CurrentItem));
             PlayNext();
         }
     }
@@ -168,24 +165,26 @@ public sealed class LuaMediaService : IDisposable
     {
         lock (_sync)
         {
-            if (_mediaList.TryDequeue(out var next))
+            if (_queue.TryDequeue(out var next))
             {
-                try
+                _ = Task.Run(() =>
                 {
-                    CurrentItem = next.Mrl;
-                    _ = _player.Play(next);
-                }
-                catch (Exception ex)
-                {
-                    CurrentItem = string.Empty;
-                    OnError?.Invoke(this, new MediaErrorEventArgs(next.Mrl, ex));
-                    PlayNext();
-                }
+                    try
+                    {
+                        _ = _player.Play(next);
+                    }
+                    catch (Exception ex)
+                    {
+                        CurrentItem = string.Empty;
+                        OnError?.Invoke(this, new MediaErrorEventArgs(Name, next.Mrl, ex));
+                        PlayNext();
+                    }
+                });
             }
             else
             {
                 CurrentItem = string.Empty;
-                QueueFinished?.Invoke(this, new QueueFinishedEventArgs());
+                OnQueueFinished?.Invoke(this, new QueueFinishedEventArgs(Name));
             }
         }
     }
@@ -198,9 +197,9 @@ public sealed class LuaMediaService : IDisposable
         ArgumentException.ThrowIfNullOrEmpty(source, nameof(source));
         var web = Uri.IsWellFormedUriString(source, UriKind.Absolute);
         var media = web
-            ? new Media(_libVlc, new Uri(source))
-            : new Media(_libVlc, source, FromType.FromPath);
-        
+            ? new Media(_libVLC, new Uri(source))
+            : new Media(_libVLC, source, FromType.FromPath);
+
         ConfigureOutputOptions(media);
 
         return media;
@@ -213,13 +212,13 @@ public sealed class LuaMediaService : IDisposable
 
         if (portEnabled && !keepOnSystem)
         {
-            var soutOption = $":sout=#http{{mux=ts,dst=127.0.0.1:{_configuration.Port}/{_configuration.StreamName}}}";
+            var soutOption = $":sout=#http{{mux=ts,dst=127.0.0.1:{_configuration.Port}/{_configuration.Stream}}}";
             media.AddOption(soutOption);
             media.AddOption(":sout-keep");
         }
         else if (portEnabled && keepOnSystem)
         {
-            var httpOutput = $"http{{mux=ts,dst=127.0.0.1:{_configuration.Port}/{_configuration.StreamName}}}";
+            var httpOutput = $"http{{mux=ts,dst=127.0.0.1:{_configuration.Port}/{_configuration.Stream}}}";
             var soutOption = $":sout=#duplicate{{dst={httpOutput},dst=display}}";
             media.AddOption(soutOption);
         }
@@ -283,8 +282,7 @@ public sealed class LuaMediaService : IDisposable
 
             _player.Stop();
             _player.Dispose();
-            _libVlc.Dispose();
-            _mediaList.Clear();
+            _queue.Clear();
             _disposed = true;
         }
     }

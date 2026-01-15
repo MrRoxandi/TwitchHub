@@ -15,7 +15,7 @@ public sealed class LuaDataContainer : IAsyncDisposable, IDisposable
     public LuaDataContainer(JsonSerializerOptions options, string? dataPath = null)
     {
         _dataFilePath = dataPath ?? Path.Combine(
-            AppContext.BaseDirectory, ".data", "hub-data.json");
+            AppContext.BaseDirectory, "data", "data.json");
         _jsonOptions = options;
         _operationLock = new SemaphoreSlim(1, 1);
         _cache = [];

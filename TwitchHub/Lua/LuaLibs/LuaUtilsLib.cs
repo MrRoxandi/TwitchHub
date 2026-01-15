@@ -29,6 +29,11 @@ public sealed partial class LuaUtilsLib
             ['X'] = RandomNumber(minx, maxx),
             ['Y'] = RandomNumber(miny, maxy)
         };
+    // ================= OTHER UTILS =================
+
+    [LuaMember]
+    public async Task Delay(int delay) => await Task.Delay(TimeSpan.FromMilliseconds(delay));
+
     // ================= LUA TABLES UTILS =================
 
     [LuaMember]
