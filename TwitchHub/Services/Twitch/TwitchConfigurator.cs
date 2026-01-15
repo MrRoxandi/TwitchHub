@@ -35,8 +35,8 @@ public class TwitchConfigurator(
 
         var store = TwitchTokenStore.From(response);
 
-        await _fileStorage.SaveAsync(store, ct);
         _tokenProvider.SetNewToken(store);
+        await _fileStorage.SaveAsync(store, ct);
 
         _logger.LogInformation("Tokens generated successfully. Expires in: {Expires} seconds.", response.ExpiresIn);
     }

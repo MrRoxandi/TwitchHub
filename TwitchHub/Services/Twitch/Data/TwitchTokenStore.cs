@@ -1,15 +1,17 @@
-﻿using TwitchLib.Api.Auth;
+﻿using System.Text.Json.Serialization;
+using TwitchLib.Api.Auth;
 
 namespace TwitchHub.Services.Twitch.Data;
 
 public sealed class TwitchTokenStore
 {
-    public string AccessToken { get; private set; } = null!;
-    public string RefreshToken { get; private set; } = null!;
-    public DateTimeOffset ExpiresAt { get; private set; }
+    public string AccessToken { get; set; } = null!;
+    public string RefreshToken { get; set; } = null!;
+    public DateTimeOffset ExpiresAt { get; set; }
+    [JsonIgnore]
     public bool IsExpired => ExpiresAt <= DateTimeOffset.UtcNow.AddMinutes(-1);
 
-    private TwitchTokenStore() { }
+    public TwitchTokenStore() { }
 
     public static TwitchTokenStore From(AuthCodeResponse response)
         => new()

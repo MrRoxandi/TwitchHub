@@ -33,14 +33,14 @@ public sealed class TwitchEventSub : IHostedService
         _api = api;
         _tokenProvider = tokenProvider;
         _config = config.Value;
-
+        
         _client.WebsocketConnected += OnWebsocketConnected;
         _client.WebsocketDisconnected += OnWebsocketDisconnected;
         _client.ErrorOccurred += OnErrorOccurred;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
-    {
+    {   
         await _client.ConnectAsync();
     }
 
