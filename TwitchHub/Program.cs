@@ -10,10 +10,13 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using TwitchHub.Components;
 using TwitchHub.Configurations;
+using TwitchHub.Lua;
 using TwitchHub.Lua.LuaLibs;
+using TwitchHub.Lua.Services;
 using TwitchHub.Services;
 using TwitchHub.Services.Backends;
 using TwitchHub.Services.Backends.Data;
+using TwitchHub.Services.Hardware;
 using TwitchHub.Services.LuaMedia;
 using TwitchHub.Services.Twitch;
 using TwitchHub.Services.Twitch.Data;
@@ -67,13 +70,13 @@ builder.Services.AddSingleton<TwitchClient>(sp =>
 });
 
 builder.Services.AddHostedService<TwitchChatClient>();
-
 builder.Services.AddTwitchLibEventSubWebsockets();
 builder.Services.AddHostedService<TwitchEventSub>();
 builder.Services.AddSingleton<TwitchConfigurator>();
 
 // -------------- LUA SERVICES --------------
 
+//builder.Services.AddSingleton<LuaStateProvider>();
 builder.Services.AddDbContextFactory<PointsDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString(PointsDbContext.ConnectionString)));
 
@@ -92,6 +95,10 @@ builder.Services.AddSingleton<JsonSerializerOptions>(sp =>
     options.Converters.Add(new JsonStringEnumConverter());
     return options;
 });
+builder.Services.AddSingleton<LuaBlockedKeys>();
+builder.Services.AddSingleton<LuaReactionsService>();
+builder.Services.AddHostedService<LuaHardwareService>();
+builder.Services.AddHostedService<LuaSharedManager>();
 
 // -------------- LUA LIBS --------------
 
@@ -134,34 +141,5 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-var state = LuaState.Create();
-state.Environment["TwitchLuaLib"] = app.Services.GetRequiredService<LuaTwitchLib>();
-state.Environment["StorageLuaLib"] = app.Services.GetRequiredService<LuaStorageLib>();
-state.Environment["HardwareLuaLib"] = app.Services.GetRequiredService<LuaHardwareLib>();
-state.Environment["UtilsLuaLib"] = app.Services.GetRequiredService<LuaUtilsLib>();
-state.Environment["MediaLuaLib"] = app.Services.GetRequiredService<LuaMediaLib>();
-state.OpenStandardLibraries();
+app.Run();
 
-var lms = app.Services.GetRequiredService<LuaMediaService>();
-var channels = string.Join(", ", lms.Channels);
-app.Logger.LogInformation("All channesl: {channels}", channels);
-var res = await TestScript(state);
-
-await Task.Delay(TimeSpan.FromSeconds(30));
-
-//var r = Task.Delay(TimeSpan.FromSeconds(20))
-//    .ContinueWith(async _ => await TestScript(state));
-//app.Run();
-
-return;
-
-static async Task<LuaValue[]> TestScript(LuaState state) => await state.DoStringAsync(
-    @"
-        local media = MediaLuaLib
-        local utils = UtilsLuaLib
-        local channel = 'Main'
-        media:Add(channel, 'C:/Users/lyamcev/Downloads/Lady_Gaga_-_Judas_79457310.mp3') 
-        media:SetVolume(channel, 30)
-        utils:Delay(4 * 1000)
-        media:Add('stream', 'C:/Users/lyamcev/Downloads/Britney Manson - FASHION (Audio) [7af0d1a10b8d35e2453784bc215ab6ea].mp4')
-    ");
