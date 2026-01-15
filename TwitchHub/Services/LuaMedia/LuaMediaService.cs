@@ -13,7 +13,7 @@ public sealed class LuaMediaService : IDisposable
     private readonly ConcurrentDictionary<string, LuaMediaChannel> _channels 
         = new(StringComparer.OrdinalIgnoreCase);
     private bool _disposed;
-
+    private ILogger<LuaMediaService> _logger;
     // ================= STATES =================
     public IEnumerable<string> Channels => _channels.Keys;
     
@@ -30,12 +30,26 @@ public sealed class LuaMediaService : IDisposable
 
     // ================= INIT =================
 
-    public LuaMediaService(IOptions<LuaMediaServiceConfiguration> options)
+    public LuaMediaService(IOptions<LuaMediaServiceConfiguration> options, ILogger<LuaMediaService> logger)
     {
         Core.Initialize();
         _configuration = options.Value;
-        _libVlc = new LibVLC();
+        _libVlc = new LibVLC("--http-host=localhost", "--quiet");
+        _logger = logger;
+        _libVlc.Log += OnLibVlcLog;
         InitializeChannels();
+    }
+
+    private void OnLibVlcLog(object? sender, LogEventArgs e)
+    {
+        var level = e.Level;
+        var mappedLevel = level switch
+        {
+            LibVLCSharp.Shared.LogLevel.Warning => Microsoft.Extensions.Logging.LogLevel.Warning,
+            LibVLCSharp.Shared.LogLevel.Error => Microsoft.Extensions.Logging.LogLevel.Error,
+            _ => Microsoft.Extensions.Logging.LogLevel.Debug,
+        };
+        _logger.Log(mappedLevel, "{message}", e.Message);
     }
 
     private void InitializeChannels()
@@ -89,7 +103,7 @@ public sealed class LuaMediaService : IDisposable
         }
         else
         {
-            // OnError invoke
+            OnError?.Invoke(this, new(channel, null, new ArgumentException($"Channel with name {channel} doesn't exist")));
         }
     }
 
@@ -103,7 +117,7 @@ public sealed class LuaMediaService : IDisposable
         }
         else
         {
-            // OnError invoke
+            OnError?.Invoke(this, new(channel, null, new ArgumentException($"Channel with name {channel} doesn't exist")));
         }
     }
 
@@ -116,7 +130,7 @@ public sealed class LuaMediaService : IDisposable
         }
         else
         {
-            // OnError invoke
+            OnError?.Invoke(this, new(channel, null, new ArgumentException($"Channel with name {channel} doesn't exist")));
         }
     }
 
@@ -129,7 +143,7 @@ public sealed class LuaMediaService : IDisposable
         }
         else
         {
-            // OnError invoke
+            OnError?.Invoke(this, new(channel, null, new ArgumentException($"Channel with name {channel} doesn't exist")));
         }
     }
 
@@ -142,7 +156,7 @@ public sealed class LuaMediaService : IDisposable
         }
         else
         {
-            // OnError invoke
+            OnError?.Invoke(this, new(channel, null, new ArgumentException($"Channel with name {channel} doesn't exist")));
         }
     }
 
@@ -158,7 +172,7 @@ public sealed class LuaMediaService : IDisposable
         }
         else
         {
-            // OnError invoke
+            OnError?.Invoke(this, new(channel, null, new ArgumentException($"Channel with name {channel} doesn't exist")));
         }
     }
 
@@ -171,7 +185,7 @@ public sealed class LuaMediaService : IDisposable
         }
         else
         {
-            // OnError invoke
+            OnError?.Invoke(this, new(channel, null, new ArgumentException($"Channel with name {channel} doesn't exist")));
             return -1;
         }
     }
@@ -185,8 +199,7 @@ public sealed class LuaMediaService : IDisposable
         }
         else
         {
-            // OnError invoke
-            
+            OnError?.Invoke(this, new(channel, null, new ArgumentException($"Channel with name {channel} doesn't exist")));
         }
     }
 
@@ -199,7 +212,7 @@ public sealed class LuaMediaService : IDisposable
         }
         else
         {
-            // OnError invoke
+            OnError?.Invoke(this, new(channel, null, new ArgumentException($"Channel with name {channel} doesn't exist")));
             return -1.0f;
         }
     }
@@ -219,6 +232,7 @@ public sealed class LuaMediaService : IDisposable
         }
         _channels.Clear();
         _libVlc.Dispose();
+        _libVlc.Log -= OnLibVlcLog;
         _disposed = true;
     }
 }
