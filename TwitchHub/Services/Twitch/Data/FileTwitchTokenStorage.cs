@@ -8,9 +8,8 @@ public sealed class FileTwitchTokenStorage(
     IWebHostEnvironment env
     )
 {
-
     private readonly IDataProtector _protector = provider.CreateProtector("twitch.tokens.v1");
-    private readonly string _path = Path.Combine(env.ContentRootPath, "tokens.dat");
+    private readonly string _path = Path.Combine(env.ContentRootPath, "data", "tokens.dat");
 
     public async Task SaveAsync(TwitchTokenStore tokens, CancellationToken ct)
     {

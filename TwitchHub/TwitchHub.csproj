@@ -30,7 +30,7 @@
 
 
   <ItemGroup>
-    <Folder Include="configs\reactions\" />
+    <Folder Include="data\" />
     <Folder Include="Localization\" />
   </ItemGroup>
 </Project>

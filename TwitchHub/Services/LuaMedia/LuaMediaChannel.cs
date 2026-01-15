@@ -32,6 +32,9 @@ public sealed class LuaMediaChannel : IDisposable
     public bool IsPaused => _player.State == VLCState.Paused;
     public bool IsStopped => _player.State == VLCState.Stopped;
     public int QueueCount => _queue.Count;
+    public bool PortEnabled => _configuration.PortEnabled;
+    public string Stream => _configuration.Stream;
+    public int Port => _configuration.Port;
 
     public int Volume
     {

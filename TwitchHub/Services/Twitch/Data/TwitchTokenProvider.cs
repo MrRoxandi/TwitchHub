@@ -81,10 +81,7 @@ public sealed class TwitchTokenProvider(
 
             _logger.LogInformation("Token refreshed successfully.");
 
-            if (OnTokenRefreshed != null)
-            {
-                await OnTokenRefreshed.Invoke(_store.AccessToken);
-            }
+            _ = OnTokenRefreshed?.Invoke(_store.AccessToken);
 
             return _store.AccessToken;
         }

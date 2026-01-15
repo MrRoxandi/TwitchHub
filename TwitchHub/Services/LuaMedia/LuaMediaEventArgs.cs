@@ -15,7 +15,7 @@ public class MediaAddedEventArgs(string channel, string source, int pos)
 public class MediaStartedEventArgs(string channel, string item)
     : MediaEventArgs(channel)
 {
-    public string MediaItem { get; } = item;
+    public string Source { get; } = item;
     public DateTime StartTime { get; } = DateTime.UtcNow;
 
 }
@@ -23,7 +23,7 @@ public class MediaStartedEventArgs(string channel, string item)
 public class MediaPausedEventArgs(string channel, string item, long movieTime)
     : MediaEventArgs(channel)
 {
-    public string MediaItem { get; } = item;
+    public string Source { get; } = item;
     public long MovieTime { get; } = movieTime;
     public DateTime PauseTime { get; } = DateTime.UtcNow;
 }
@@ -31,22 +31,22 @@ public class MediaPausedEventArgs(string channel, string item, long movieTime)
 public class MediaStoppedEventArgs(string channel, string item)
     : MediaEventArgs(channel)
 {
-    public string MediaItem { get; } = item;
+    public string Source { get; } = item;
     public DateTime StopTime { get; } = DateTime.UtcNow;
 }
 
 public class MediaSkippedEventArgs(string channel, string item)
     : MediaEventArgs(channel)
 {
-    public string SkippedItem { get; } = item;
+    public string Source { get; } = item;
     public DateTime SkipTime { get; } = DateTime.UtcNow;
 }
 
 public class MediaEndReachedEventArgs(string channel, string item)
     : MediaEventArgs(channel)
 {
-    public string CompletedItem { get; } = item;
-    public DateTime CompletionTime { get; } = DateTime.UtcNow;
+    public string Source { get; } = item;
+    public DateTime EndTime { get; } = DateTime.UtcNow;
 }
 
 public class QueueFinishedEventArgs(string channel)
@@ -58,7 +58,7 @@ public class QueueFinishedEventArgs(string channel)
 public class MediaErrorEventArgs(string channel, string? item, Exception ex)
     : MediaEventArgs(channel)
 {
-    public string? MediaItem { get; } = item;
+    public string? Source { get; } = item;
     public Exception Exception { get; } = ex;
     public DateTime ErrorTime { get; } = DateTime.UtcNow;
 }

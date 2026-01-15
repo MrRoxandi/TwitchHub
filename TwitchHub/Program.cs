@@ -1,5 +1,3 @@
-using Lua;
-using Lua.Standard;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -13,7 +11,6 @@ using TwitchHub.Configurations;
 using TwitchHub.Lua;
 using TwitchHub.Lua.LuaLibs;
 using TwitchHub.Lua.Services;
-using TwitchHub.Services;
 using TwitchHub.Services.Backends;
 using TwitchHub.Services.Backends.Data;
 using TwitchHub.Services.Hardware;
@@ -29,6 +26,19 @@ builder.Host.UseSerilog((context, services, config) =>
     config.ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext());
+
+var dataPath = Path.Combine(builder.Environment.ContentRootPath, "data");
+var keysPath = Path.Combine(builder.Environment.ContentRootPath, "keys");
+
+if (!Directory.Exists(dataPath))
+{
+    _ = Directory.CreateDirectory(dataPath);
+}
+
+if (!Directory.Exists(keysPath))
+{
+    _ = Directory.CreateDirectory(keysPath);
+}
 
 // Add MudBlazor services
 builder.Services.AddMudServices();
@@ -69,16 +79,19 @@ builder.Services.AddSingleton<TwitchClient>(sp =>
     return new TwitchClient(loggerFactory: lf);
 });
 
-builder.Services.AddHostedService<TwitchChatClient>();
 builder.Services.AddTwitchLibEventSubWebsockets();
-builder.Services.AddHostedService<TwitchEventSub>();
 builder.Services.AddSingleton<TwitchConfigurator>();
+builder.Services.AddHostedService<TwitchChatClient>();
+builder.Services.AddHostedService<TwitchEventSub>();
+builder.Services.AddHostedService<TwitchClipPoller>();
 
 // -------------- LUA SERVICES --------------
 
 //builder.Services.AddSingleton<LuaStateProvider>();
 builder.Services.AddDbContextFactory<PointsDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString(PointsDbContext.ConnectionString)));
+builder.Services.AddDbContextFactory<TwitchClipsDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString(TwitchClipsDbContext.ConnectionString)));
 
 builder.Services.AddSingleton<LuaDataContainer>();
 builder.Services.AddSingleton<LuaMediaService>();
@@ -115,9 +128,12 @@ builder.WebHost.ConfigureKestrel((context, options) => options.Configure(context
 var app = builder.Build();
 try
 {
-    var factory = app.Services.GetRequiredService<IDbContextFactory<PointsDbContext>>();
-    using var context = await factory.CreateDbContextAsync();
-    await context.Database.MigrateAsync();
+    var pointsFactory = app.Services.GetRequiredService<IDbContextFactory<PointsDbContext>>();
+    var clipsFactory = app.Services.GetRequiredService<IDbContextFactory<TwitchClipsDbContext>>();
+    using var pointsContext = await pointsFactory.CreateDbContextAsync();
+    using var clipsContext = await clipsFactory.CreateDbContextAsync();
+    await pointsContext.Database.MigrateAsync();
+    await clipsContext.Database.MigrateAsync();
     app.Logger.LogInformation("Database migration/check completed successfully.");
 }
 catch (Exception ex)

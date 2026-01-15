@@ -2,11 +2,12 @@
 
 public enum LuaReactionKind
 {
+    None,
     // ReactionKind:
     // - Twitch:
-    Command, Reward, Message, Follow, Subscribe, GiftSubscribe, Cheers, Clip,
+    Command, Reward, Message, Follow, Subscribe, GiftSubscribe, Cheer, StreamOn, StreamOff, Clip,
     // - Hardware:
     KeyDown, KeyUp, KeyType, MouseDown, MouseUp, MouseClick, MouseMove, MouseWheel,
     // - Media:
-    OnMediaAdded, OnMediaStarted, OnMediaSkipped, OnMediaPaused, OnMediaStopped, OnMediaEndReached, QueueFinished, OnError 
+    MediaAdd, MediaStart, MediaSkip, MediaPause, MediaStop, MediaEnd, MediaQueueFinish, MediaError 
 }

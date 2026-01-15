@@ -1,5 +1,4 @@
 ﻿using Lua;
-using Microsoft.AspNetCore.Connections.Features;
 using System.Collections.Concurrent;
 
 namespace TwitchHub.Lua.Services;
@@ -36,11 +35,12 @@ public sealed class LuaReactionsService(ILogger<LuaReactionsService> logger)
                 LuaValueType.Number => (LuaReactionKind)config["kind"].Read<int>(),
                 _ => throw new ArgumentException($"Invalid 'kind' property on reaction in file: {filePath}")
             };
-            
+
             if (config["oncall"].Type is not LuaValueType.Function)
             {
                 throw new ArgumentException($"Invalid 'oncall' property on reaction in file: {filePath}");
             }
+
             if (config["onerror"].Type is not LuaValueType.Function)
             {
                 throw new ArgumentException($"Invalid 'onerror' property on reaction in file: {filePath}");
@@ -53,8 +53,9 @@ public sealed class LuaReactionsService(ILogger<LuaReactionsService> logger)
             {
                 cooldown = config["cooldown"].Read<long>();
             }
+
             var reaction = new LuaReaction(filePath, kind, state, oncall, onerror, cooldown);
-            
+
             _reactions[Path.GetFileNameWithoutExtension(filePath)] = reaction;
         }
         catch (Exception ex)
@@ -63,15 +64,14 @@ public sealed class LuaReactionsService(ILogger<LuaReactionsService> logger)
         }
     }
 
-    public bool Contains(string key) 
-        => _reactions.ContainsKey(key);
-    public bool Contains(LuaReactionKind kind) 
+    public bool Contains(LuaReactionKind kind)
         => _reactions.Values.Any(v => v.Kind == kind);
-    public LuaReaction? Get(string key) 
+    public bool Contains(string key) => _reactions.ContainsKey(key);
+    public LuaReaction? Get(string key)
         => _reactions.TryGetValue(key, out var reaction) ? reaction : null;
     public IEnumerable<LuaReaction> Get(LuaReactionKind kind)
         => _reactions.Values.Where(v => v.Kind == kind);
-    public async Task CallAsync(string key, params LuaValue[] args)
+    public async Task CallAsync(string key, LuaReactionKind kind, params LuaValue[] args)
     {
         try
         {
@@ -82,12 +82,17 @@ public sealed class LuaReactionsService(ILogger<LuaReactionsService> logger)
                 return;
             }
 
+            if (reaction.Kind.Equals(kind) is false)
+            {
+                _logger.LogWarning("Attepted to call {name} reaction with invalid kind {expected} != {actual}", key, reaction.Kind, kind);
+                return;
+            }
+
             var result = await reaction.CallAsync(args);
             if (!result.Success)
             {
                 _logger.LogInformation("Call to {name} reaction failed due: {message}", key, result.ErrorMessage);
             }
-
         }
         catch (Exception ex)
         {

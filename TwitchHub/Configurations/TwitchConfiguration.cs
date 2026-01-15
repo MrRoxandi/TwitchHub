@@ -7,4 +7,6 @@ public sealed class TwitchConfiguration
     public required string ClientSecret { get; init; }
     public required string RedirectUrl { get; init; }
     public required string Channel { get; init; }
+
+    public int ClipsPollingIntervalSeconds { get; init; } = 60;
 }

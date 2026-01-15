@@ -14,7 +14,7 @@ public sealed partial class LuaMediaLib(LuaMediaService service)
         var table = new LuaTable();
         foreach (var (idx, key) in _service.Channels.Index())
         {
-            table[idx + 1] = key;
+            table[idx + 1] = key.Name;
         }
 
         return table;

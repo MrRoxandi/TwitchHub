@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using TwitchHub.Configurations;
+using TwitchHub.Lua.Services;
 using TwitchHub.Services.Twitch.Data;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
@@ -13,11 +14,13 @@ public sealed class TwitchChatClient : IHostedService, IDisposable
     private readonly ILogger<TwitchChatClient> _logger;
     private readonly TwitchConfiguration _configuration;
     private readonly TwitchTokenProvider _tokenProvider;
+    private readonly LuaReactionsService _reactions;
 
-    private CancellationTokenSource _connectionCts = new();
+    private readonly CancellationTokenSource _connectionCts = new();
     private bool _isDisposed;
     public TwitchChatClient(
         ILoggerFactory loggerFactory,
+        LuaReactionsService reactions,
         IOptions<TwitchConfiguration> config,
         TwitchClient client,
         TwitchTokenProvider tokenProvider)
@@ -26,6 +29,7 @@ public sealed class TwitchChatClient : IHostedService, IDisposable
         _logger = loggerFactory.CreateLogger<TwitchChatClient>();
         _configuration = config.Value;
         _tokenProvider = tokenProvider;
+        _reactions = reactions;
         _tokenProvider.OnTokenRefreshed += OnTokenRefreshedAsync;
     }
 
@@ -51,7 +55,10 @@ public sealed class TwitchChatClient : IHostedService, IDisposable
         }
 
         if (_client.IsConnected)
+        {
             await _client.DisconnectAsync();
+        }
+
         var credentials = new ConnectionCredentials(_configuration.Channel, token);
         _client.Initialize(credentials);
 
@@ -107,48 +114,42 @@ public sealed class TwitchChatClient : IHostedService, IDisposable
 
     private async Task OnConnected(object? sender, OnConnectedEventArgs e)
     {
-        _logger.LogInformation(
-            "Connected to Twitch chat as {Username}",
-            e.BotUsername
-        );
-
+        _logger.LogInformation("Connected to Twitch chat as {Username}", e.BotUsername);
         await _client.JoinChannelAsync(_configuration.Channel);
     }
 
-    private Task OnMessageReceived(
-        object? sender,
-        OnMessageReceivedArgs e
-    )
+    private async Task OnMessageReceived(object? sender, OnMessageReceivedArgs e)
     {
-        _logger.LogInformation(
-            "{User}: {Message}",
-            e.ChatMessage.Username,
-            e.ChatMessage.Message
-        );
-
-        return Task.CompletedTask;
+        _logger.LogDebug("Recieved message '{message}' from '{username}'", e.ChatMessage.Message, e.ChatMessage.Username);
+        try
+        {
+            await _reactions.CallAsync(LuaReactionKind.Message, e.ChatMessage.Username, e.ChatMessage.UserId, e.ChatMessage.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing chat message reaction");
+        }
     }
 
-    private Task OnChatCommandReceived(
-        object? sender,
-        OnChatCommandReceivedArgs e
-    )
+    private async Task OnChatCommandReceived(object? sender, OnChatCommandReceivedArgs e)
     {
-        _logger.LogInformation(
-            "Command {Command} from {User}",
-            e.Command.Name,
-            e.ChatMessage.Username
-        );
+        _logger.LogDebug("Recieved command '{command}' from '{username}'", e.Command.Name, e.ChatMessage.Username);
+        if (!_reactions.Get(LuaReactionKind.Command)
+            .Any(r => r.Name.Equals(e.Command.Name, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
 
-        return Task.CompletedTask;
+        await _reactions.CallAsync(e.Command.Name, LuaReactionKind.Command,
+            e.ChatMessage.Username, e.ChatMessage.UserId, e.Command.ArgumentsAsString);
     }
 
     private async Task OnDisconnected(object? sender, OnDisconnectedArgs e)
     {
         _logger.LogWarning("Disconnected from Twitch chat");
-        if (_connectionCts.IsCancellationRequested)
+        if (!_connectionCts.IsCancellationRequested)
         {
-            // should make reconnect here after some small delay
+            await ConnectAsync(_connectionCts.Token);
         }
     }
 
@@ -160,8 +161,11 @@ public sealed class TwitchChatClient : IHostedService, IDisposable
 
     public void Dispose()
     {
-        if (_isDisposed) 
-                return;
+        if (_isDisposed)
+        {
+            return;
+        }
+
         _tokenProvider.OnTokenRefreshed -= OnTokenRefreshedAsync;
         _isDisposed = true;
     }

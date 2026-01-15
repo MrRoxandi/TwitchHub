@@ -65,6 +65,7 @@ public class TwitchConfigurator(
         AuthScopes.User_Read_Chat,
         AuthScopes.User_Write_Chat,
         AuthScopes.Whisper_Edit,
-        AuthScopes.Whisper_Read
+        AuthScopes.Whisper_Read,
+        AuthScopes.Bits_Read,
         ];
 }

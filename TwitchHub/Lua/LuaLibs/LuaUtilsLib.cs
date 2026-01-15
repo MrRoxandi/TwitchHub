@@ -49,14 +49,18 @@ public sealed partial class LuaUtilsLib
             foreach (var v in table.GetArraySpan())
             {
                 if (v == value)
+                {
                     return true;
+                }
             }
         }
 
         foreach (var (_, v) in table)
         {
             if (v == value)
+            {
                 return true;
+            }
         }
 
         return false;
@@ -65,7 +69,10 @@ public sealed partial class LuaUtilsLib
     public LuaValue TableRandom(LuaTable table)
     {
         if (IsTableEmpty(table))
+        {
             return LuaValue.Nil;
+        }
+
         if (IsLuaArray(table))
         {
             var span = table.GetArraySpan();
@@ -100,7 +107,20 @@ public sealed partial class LuaUtilsLib
         => IsLuaArray(table)
             ? string.Join(sep, table.Select(e => e.Value.ToString()))
             : string.Join(sep, table.Select(e => $"[{e.Key}]: {e.Value}"));
+    [LuaMember]
+    public LuaTable StringSplit(string str, string delim = " ")
+    {
+        var result = new LuaTable();
+        foreach (var (idx, part) in str
+            .Split(delim, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Index()
+            )
+        {
+            result[idx + 1] = part;
+        }
 
+        return result;
+    }
     [LuaMember]
     public string TableToJson(LuaTable table)
         => LuaJsonConverter.ToJson(table)?.ToJsonString() ?? string.Empty;
