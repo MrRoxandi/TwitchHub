@@ -33,6 +33,7 @@ public sealed partial class LuaUtilsLib
 
     [LuaMember]
     public async Task Delay(int delay) => await Task.Delay(TimeSpan.FromMilliseconds(delay));
+    
 
     // ================= LUA TABLES UTILS =================
 
@@ -108,6 +109,10 @@ public sealed partial class LuaUtilsLib
             ? string.Join(sep, table.Select(e => e.Value.ToString()))
             : string.Join(sep, table.Select(e => $"[{e.Key}]: {e.Value}"));
     [LuaMember]
+    public string TableToJson(LuaTable table)
+        => LuaJsonConverter.ToJson(table)?.ToJsonString() ?? string.Empty;
+    
+    [LuaMember]
     public LuaTable StringSplit(string str, string delim = " ")
     {
         var result = new LuaTable();
@@ -121,9 +126,15 @@ public sealed partial class LuaUtilsLib
 
         return result;
     }
+
     [LuaMember]
-    public string TableToJson(LuaTable table)
-        => LuaJsonConverter.ToJson(table)?.ToJsonString() ?? string.Empty;
+    public string StringFormat(string str, LuaTable table)
+    {
+        LuaValue[] luaValues = IsLuaArray(table)
+            ? [.. table.GetArraySpan()]
+            : [.. table.Select(kvp => kvp.Value)];
+        return string.Format(str, luaValues);
+    }
 
     // ================= DATETIME UTILS =================
 

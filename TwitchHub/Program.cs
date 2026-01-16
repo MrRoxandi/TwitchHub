@@ -121,6 +121,7 @@ builder.Services.AddSingleton<LuaStorageLib>();
 builder.Services.AddSingleton<LuaUtilsLib>();
 builder.Services.AddSingleton<LuaPointsLib>();
 builder.Services.AddSingleton<LuaMediaLib>();
+builder.Services.AddSingleton<LuaLoggerLib>();
 
 // Configure Kestrel from appsettings.json 
 builder.WebHost.ConfigureKestrel((context, options) => options.Configure(context.Configuration.GetSection("Kestrel")));
