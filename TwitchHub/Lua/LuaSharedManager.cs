@@ -30,6 +30,7 @@ public class LuaSharedManager : IDisposable, IHostedService
         _ = Directory.CreateDirectory(_reactionsPath);
 
         _state.Environment["hardwarelib"] = serviceProvider.GetRequiredService<LuaHardwareLib>();
+        _state.Environment["loggerlib"] = serviceProvider.GetRequiredService<LuaLoggerLib>();
         _state.Environment["medialib"] = serviceProvider.GetRequiredService<LuaMediaLib>();
         _state.Environment["pointslib"] = serviceProvider.GetRequiredService<LuaPointsLib>();
         _state.Environment["storagelib"] = serviceProvider.GetRequiredService<LuaStorageLib>();

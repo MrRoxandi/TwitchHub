@@ -123,7 +123,7 @@ builder.Services.AddSingleton<LuaPointsLib>();
 builder.Services.AddSingleton<LuaMediaLib>();
 builder.Services.AddSingleton<LuaLoggerLib>();
 
-// Configure Kestrel from appsettings.json 
+// Configure Kestrel from appsettings.json
 builder.WebHost.ConfigureKestrel((context, options) => options.Configure(context.Configuration.GetSection("Kestrel")));
 
 var app = builder.Build();
@@ -159,4 +159,3 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
-
