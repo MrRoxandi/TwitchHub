@@ -1,0 +1,99 @@
+﻿@page "/media"
+@using TwitchHub.Services.LuaMedia
+@inject LuaMediaService MediaService
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<MudText Typo="Typo.h5" Style="font-weight: 700;" Class="mb-4">Медиа Каналы</MudText>
+
+<MudGrid>
+    @foreach (var channel in MediaService.Channels)
+    {
+        <MudItem xs="12" md="6" lg="4">
+            <MudCard Outlined="true" Style="border-color: #27272a;">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <div class="d-flex align-center justify-space-between">
+                            <MudText Typo="Typo.h6">@channel.Name</MudText>
+                            @if (channel.IsPlaying)
+                            {
+                                <MudChip T="string" Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.PlayArrow">Playing</MudChip>
+                            }
+                            else if (channel.IsPaused)
+                            {
+                                <MudChip T="string" Color="Color.Warning" Size="Size.Small" Icon="@Icons.Material.Filled.Pause">Paused</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Color="Color.Default" Size="Size.Small" Icon="@Icons.Material.Filled.Stop">Stopped</MudChip>
+                            }
+                        </div>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">Сейчас играет:</MudText>
+                    <MudText Typo="Typo.body1" Class="text-truncate mb-4" Style="font-weight: 600; color: #06b6d4;">
+                        @(string.IsNullOrEmpty(channel.CurrentItem) ? "Ничего" : channel.CurrentItem)
+                    </MudText>
+
+                    <MudText Typo="Typo.caption">Очередь: @channel.QueueCount треков</MudText>
+
+                    <div class="mt-4">
+                        <MudText Typo="Typo.caption">Громкость: @channel.Volume%</MudText>
+                        <MudSlider T="int" @bind-Value="@channel.Volume" Min="0" Max="100" Color="Color.Primary" />
+                    </div>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" OnClick="@(() => channel.Start())" Disabled="@channel.IsPlaying" Color="Color.Success" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Pause" OnClick="@(() => channel.Pause())" Disabled="@(!channel.IsPlaying)" Color="Color.Warning" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Stop" OnClick="@(() => channel.Stop())" Color="Color.Error" />
+                    <MudIconButton Icon="@Icons.Material.Filled.SkipNext" OnClick="@(() => channel.Skip())" />
+                    <MudSpacer />
+                    @if (channel.PortEnabled)
+                    {
+                        <MudTooltip Text="Открыть поток (нужен плеер с поддержкой TS)">
+                            <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" Href="@($"http://127.0.0.1:{channel.Port}/{channel.Stream}")" Target="_blank" />
+                        </MudTooltip>
+                    }
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    // Для обновления UI при событиях плеера
+    protected override void OnInitialized()
+    {
+        foreach (var ch in MediaService.Channels)
+        {
+            ch.OnStarted += OnMediaEvent;
+            ch.OnStopped += OnMediaEvent;
+            ch.OnPaused += OnMediaEvent;
+            ch.OnSkipped += OnMediaEvent;
+            ch.OnEndReached += OnMediaEvent;
+        }
+    }
+
+    private void OnMediaEvent(object? sender, EventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void SetVolume(LuaMediaChannel channel, int volume)
+    {
+        channel.Volume = volume;
+    }
+
+    public void Dispose()
+    {
+        foreach (var ch in MediaService.Channels)
+        {
+            ch.OnStarted -= OnMediaEvent;
+            ch.OnStopped -= OnMediaEvent;
+            ch.OnPaused -= OnMediaEvent;
+            ch.OnSkipped -= OnMediaEvent;
+            ch.OnEndReached -= OnMediaEvent;
+        }
+    }
+}

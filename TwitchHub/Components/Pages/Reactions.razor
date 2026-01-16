@@ -1,0 +1,73 @@
+﻿@page "/reactions"
+@using TwitchHub.Lua.Services
+@inject LuaReactionsService ReactionsService
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h5" Style="font-weight: 700;" Class="mb-4">Управление Реакциями</MudText>
+
+<MudPaper Class="pa-4" Outlined="true" Style="border-color: #27272a;">
+    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4" Color="Color.Primary">
+        @foreach (var kind in _groupedReactions.Keys)
+        {
+            <MudTabPanel Text="@kind.ToString()">
+                @if (_groupedReactions[kind].Any())
+                {
+                    <MudTable Items="@_groupedReactions[kind]" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+                        <HeaderContent>
+                            <MudTh>Название (Файл)</MudTh>
+                            <MudTh>Кулдаун (мс)</MudTh>
+                            <MudTh>Путь</MudTh>
+                            <MudTh Style="text-align: right;">Состояние</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Name">
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;">@context.Name</MudText>
+                            </MudTd>
+                            <MudTd DataLabel="Cooldown">@context.CoolDown.TotalMilliseconds</MudTd>
+                            <MudTd DataLabel="Path">
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary">@System.IO.Path.GetFileName(context.FilePath)</MudText>
+                            </MudTd>
+                            <MudTd DataLabel="State" Style="text-align: right;">
+                                <MudSwitch T="bool" Value="@context.IsEnabled"
+                                           ValueChanged="@((v) => ToggleReaction(context, v))"
+                                           Color="Color.Success" />
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info">Нет реакций этого типа.</MudAlert>
+                }
+            </MudTabPanel>
+        }
+    </MudTabs>
+</MudPaper>
+
+@code {
+    private Dictionary<LuaReactionKind, List<LuaReaction>> _groupedReactions = new();
+
+    protected override void OnInitialized()
+    {
+        LoadReactions();
+    }
+
+    private void LoadReactions()
+    {
+        _groupedReactions.Clear();
+        var kinds = Enum.GetValues<LuaReactionKind>();
+
+        foreach (var kind in kinds)
+        {
+            if (kind == LuaReactionKind.None) continue;
+            var reactions = ReactionsService.Get(kind).ToList();
+            _groupedReactions[kind] = reactions;
+        }
+    }
+
+    private void ToggleReaction(LuaReaction reaction, bool isEnabled)
+    {
+        reaction.IsEnabled = isEnabled;
+        Snackbar.Add($"Реакция {reaction.Name} {(isEnabled ? "включена" : "отключена")}", Severity.Info);
+    }
+}

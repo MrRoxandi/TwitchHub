@@ -1,0 +1,100 @@
+﻿@page "/lua-storage"
+@using TwitchHub.Services.Backends
+@using TwitchHub.Lua
+@using System.Text.Json
+@using global::Lua
+
+@inject LuaDataContainer DataContainer
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudText Typo="Typo.h5" Style="font-weight: 700;" Class="mb-4">Lua Data Container</MudText>
+
+<MudTable Items="@_dataItems" Hover="true" Filter="new Func<DataItem, bool>(FilterFunc)" Outlined="true" Style="border-color: #27272a;">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Данные</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="_searchString" Placeholder="Поиск по ключу..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Ключ</MudTh>
+        <MudTh>Значение (JSON)</MudTh>
+        <MudTh Style="text-align: right;">Действия</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Key" Style="color: #06b6d4; font-family: monospace;">@context.Key</MudTd>
+        <MudTd DataLabel="Value">
+            <MudText Typo="Typo.body2" Style="font-family: monospace; max-width: 500px;" Class="text-truncate">@context.ValueJson</MudText>
+        </MudTd>
+        <MudTd DataLabel="Actions" Style="text-align: right;">
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteItem(context.Key))" />
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+<div class="mt-4 d-flex justify-end gap-2">
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="ReloadData">Обновить</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="SaveData">Сохранить на диск</MudButton>
+</div>
+
+@code {
+    private string _searchString = "";
+    private List<DataItem> _dataItems = new();
+
+    private class DataItem
+    {
+        public string Key { get; set; } = "";
+        public string ValueJson { get; set; } = "";
+    }
+
+    protected override void OnInitialized()
+    {
+        LoadData();
+    }
+
+    private void LoadData()
+    {
+        _dataItems.Clear();
+        foreach (var key in DataContainer.Keys)
+        {
+            var val = DataContainer.Get<LuaValue>(key);
+            var json = LuaJsonConverter.ToJson(val)?.ToJsonString() ?? "null";
+
+            _dataItems.Add(new DataItem { Key = key, ValueJson = json });
+        }
+    }
+
+    private bool FilterFunc(DataItem item) =>
+        string.IsNullOrWhiteSpace(_searchString) ||
+        item.Key.Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+
+    private async Task DeleteItem(string key)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Удаление",
+            $"Вы уверены, что хотите удалить ключ '{key}'?",
+            yesText: "Удалить", cancelText: "Отмена");
+
+        if (result == true)
+        {
+            DataContainer.Remove(key);
+            LoadData();
+            Snackbar.Add("Ключ удален", Severity.Success);
+        }
+    }
+
+    private void ReloadData()
+    {
+        LoadData();
+        Snackbar.Add("Данные обновлены", Severity.Info);
+    }
+
+    private async Task SaveData()
+    {
+        await DataContainer.SaveAsync();
+        Snackbar.Add("Данные сохранены на диск", Severity.Success);
+    }
+}

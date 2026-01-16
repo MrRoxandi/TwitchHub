@@ -28,8 +28,8 @@ public sealed class LuaReaction(
             Success = true,
             Result = LuaValue.Nil
         };
-
-        if (LastExecuted.Add(CoolDown) >= DateTimeOffset.UtcNow)
+        
+        if (!IsEnabled || LastExecuted.Add(CoolDown) >= DateTimeOffset.UtcNow)
             return CallResult;
         try
         {

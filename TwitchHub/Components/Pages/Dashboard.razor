@@ -2,90 +2,11 @@
 
 <div class="d-flex justify-space-between align-center mb-6">
     <MudText Typo="Typo.h5" Style="font-weight: 700;">Обзор трансляции</MudText>
-    <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Outlined">Online</MudChip>
+    @* <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Outlined">Online</MudChip> *@
 </div>
 
 <MudGrid Class="mb-6">
     <MudItem xs="12" sm="6" lg="3">
-        <StatsCard Title="Зрители" Value="214" Change="+12%" Icon="@Icons.Material.Filled.People" IconColor="Color.Info" />
-    </MudItem>
-    <MudItem xs="12" sm="6" lg="3">
-        <StatsCard Title="Сообщения" Value="1,204" Change="+8%" Icon="@Icons.Material.Filled.Message" IconColor="Color.Secondary" />
-    </MudItem>
-    <MudItem xs="12" sm="6" lg="3">
-        <StatsCard Title="Новые сабы" Value="5" Change="+2%" Icon="@Icons.Material.Filled.Star" IconColor="Color.Warning" />
-    </MudItem>
-    <MudItem xs="12" sm="6" lg="3">
-        <StatsCard Title="Награды" Value="34" Change="+15%" Icon="@Icons.Material.Filled.FlashOn" IconColor="Color.Success" />
+        <MudText>WIP</MudText>
     </MudItem>
 </MudGrid>
-
-<MudGrid>
-    <MudItem xs="12" lg="8">
-        <MudPaper Class="pa-4" Outlined="true" Style="border-color: #27272a;">
-            <MudText Typo="Typo.h6" Class="mb-4">Активность чата</MudText>
-            <MudChart ChartType="ChartType.Line" ChartSeries="@Series" XAxisLabels="@XAxisLabels" Width="100%" Height="300px" ChartOptions="@Options" />
-        </MudPaper>
-    </MudItem>
-    <MudItem xs="12" lg="4">
-        <MudPaper Class="pa-4 h-100" Outlined="true" Style="border-color: #27272a;">
-            <MudText Typo="Typo.h6" Class="mb-4">Последние события</MudText>
-            <MudList T="string" Dense="true" DisablePadding="true">
-                @for (int i = 1; i <= 5; i++)
-                {
-                    <div class="d-flex align-center gap-3 py-3 border-b border-solid" style="border-color: #27272a;">
-                        <MudAvatar Size="Size.Small" Color="Color.Dark" Variant="Variant.Filled">U@(i)</MudAvatar>
-                        <div>
-                            <MudText Typo="Typo.body2">
-                                <span style="color: #A970FF; font-weight: 600;">User@(i)</span> активировал награду
-                            </MudText>
-                            <MudText Typo="Typo.caption" Class="mud-text-secondary">2 мин назад</MudText>
-                        </div>
-                    </div>
-                }
-            </MudList>
-        </MudPaper>
-    </MudItem>
-</MudGrid>
-
-@code {
-    // Mock Chart Data
-    public List<ChartSeries> Series = new List<ChartSeries>()
-    {
-        new ChartSeries() { Name = "Chat Activity", Data = new double[] { 20, 45, 30, 80, 55, 90, 110 } },
-    };
-    public string[] XAxisLabels = { "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00" };
-    public ChartOptions Options = new ChartOptions() { ChartPalette = new[] { "#9146FF" } };
-}
-
-<!-- Local Component for Card -->
-@code {
-    [Parameter] public string Title { get; set; } = "";
-    [Parameter] public string Value { get; set; } = "";
-    [Parameter] public string Change { get; set; } = "";
-    [Parameter] public string Icon { get; set; } = "";
-    [Parameter] public Color IconColor { get; set; }
-
-    private RenderFragment StatsCard(string title, string value, string change, string icon, Color color) => __builder =>
-    {
-        <MudPaper Class="pa-4 relative overflow-hidden" Outlined="true" Style="border-color: #27272a;">
-            <div class="d-flex justify-space-between align-start">
-                <div>
-                    <MudText Typo="Typo.body2" Class="mud-text-secondary">@Title</MudText>
-                    <MudText Typo="Typo.h4" Style="font-weight: 700;" Class="mt-1">@Value</MudText>
-                </div>
-                <MudPaper Class="pa-2" Elevation="0" Style="@($"background: {GetColorHex(IconColor)}1A; color: {GetColorHex(IconColor)}")">
-                    <MudIcon Icon="@Icon" />
-                </MudPaper>
-            </div>
-            <div class="d-flex align-center mt-4">
-                 <MudText Typo="Typo.caption" Color="Color.Success" Style="font-weight: 600;">@Change</MudText>
-                 <MudText Typo="Typo.caption" Class="mud-text-secondary ml-2">от прошлого стрима</MudText>
-            </div>
-        </MudPaper>
-    };
-
-    private string GetColorHex(Color c) => c switch {
-        Color.Info => "#3b82f6", Color.Secondary => "#9146FF", Color.Warning => "#eab308", Color.Success => "#22c55e", _ => "#fff"
-    };
-}

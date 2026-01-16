@@ -1,0 +1,26 @@
+﻿@using TwitchHub.Services.Backends.Entities
+<MudDialog>
+    <DialogContent>
+        <MudText>Пользователь: <b>@User.UserId</b></MudText>
+        <MudNumericField @bind-Value="_balance" Label="Баланс" Variant="Variant.Outlined" Class="mt-4" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Отмена</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Сохранить</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter, EditorRequired] public UserPoints User { get; set; }
+
+    private long _balance;
+
+    protected override void OnInitialized()
+    {
+        _balance = User.Balance;
+    }
+
+    void Submit() => MudDialog.Close(DialogResult.Ok(_balance));
+    void Cancel() => MudDialog.Cancel();
+}

@@ -1,0 +1,96 @@
+﻿@page "/points"
+@using Microsoft.EntityFrameworkCore
+@using TwitchHub.Services.Backends.Data
+@using TwitchHub.Services.Backends.Entities
+@inject IDbContextFactory<PointsDbContext> DbFactory
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h5" Style="font-weight: 700;" Class="mb-4">База Очков Пользователей</MudText>
+
+<MudTable T="UserPoints" 
+          ServerData="ServerReload"
+          Dense="true" Hover="true" @ref="_table" Outlined="true" Style="border-color: #27272a;">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Пользователи</MudText>
+        <MudSpacer />
+        <MudTextField T="string" ValueChanged="@(s => OnSearch(s))" Placeholder="Поиск (ID или Имя)..." Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>User ID / Имя</MudTh>
+        <MudTh>Баланс</MudTh>
+        <MudTh Style="text-align: right;">Действия</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="UserId">@context.UserId</MudTd>
+        <MudTd DataLabel="Balance" Style="font-family: monospace; color: #06b6d4; font-weight: bold;">@context.Balance</MudTd>
+        <MudTd Style="text-align: right;">
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => EditBalance(context))" />
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>Ничего не найдено.</MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudText>Загрузка...</MudText>
+    </LoadingContent>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@code {
+    private MudTable<UserPoints> _table;
+    private string _searchString = "";
+
+    private async Task<TableData<UserPoints>> ServerReload(TableState state, CancellationToken token)
+    {
+        using var context = await DbFactory.CreateDbContextAsync(token);
+
+        IQueryable<UserPoints> query = context.UserPoints;
+
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            query = query.Where(u => u.UserId.Contains(_searchString));
+        }
+
+        var totalItems = await query.CountAsync(token);
+
+        query = query.OrderByDescending(u => u.Balance);
+
+        var items = await query
+            .Skip(state.Page * state.PageSize)
+            .Take(state.PageSize)
+            .ToListAsync(token);
+
+        return new TableData<UserPoints>() { TotalItems = totalItems, Items = items };
+    }
+
+    private void OnSearch(string text)
+    {
+        _searchString = text;
+        _table.ReloadServerData();
+    }
+
+    private async Task EditBalance(UserPoints user)
+    {
+        var parameters = new DialogParameters<EditBalanceDialog> { { x => x.User, user } };
+
+        var dialog = await DialogService.ShowAsync<EditBalanceDialog>("Изменить баланс", parameters);
+        var result = await dialog.Result;
+
+        if (result?.Canceled != true && result?.Data is long newBalance)
+        {
+            using var context = await DbFactory.CreateDbContextAsync();
+            var dbUser = await context.UserPoints.FindAsync(user.UserId);
+            if (dbUser != null)
+            {
+                dbUser.Balance = newBalance;
+                await context.SaveChangesAsync();
+                Snackbar.Add($"Баланс {user.UserId} обновлен", Severity.Success);
+                await _table.ReloadServerData();
+            }
+        }
+    }
+}
