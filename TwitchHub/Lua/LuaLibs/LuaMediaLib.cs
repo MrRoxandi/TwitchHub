@@ -9,7 +9,7 @@ public sealed partial class LuaMediaLib(LuaMediaService service)
     private readonly LuaMediaService _service = service;
 
     [LuaMember]
-    private LuaTable GetChannels()
+    private LuaTable Channels()
     {
         var table = new LuaTable();
         foreach (var (idx, key) in _service.Channels.Index())
@@ -38,5 +38,11 @@ public sealed partial class LuaMediaLib(LuaMediaService service)
     public int GetVolume(string channel) => _service.GetVolume(channel);
     [LuaMember]
     public float GetSpeed(string channel) => _service.GetSpeed(channel);
+    [LuaMember]
+    public bool IsPaused(string channel) => _service.IsPaused(channel);
+    [LuaMember]
+    public bool IsPlaying(string channel) => _service.IsPlaying(channel);
+    [LuaMember]
+    public bool IsStopped(string channel) => _service.IsStopped(channel);
 
 }

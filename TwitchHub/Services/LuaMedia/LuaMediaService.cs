@@ -51,7 +51,7 @@ public sealed class LuaMediaService : IDisposable
 
     private void InitializeChannels()
     {
-        // If in configuration no channels presented add a default "Main" one 
+        // If in configuration no channels presented add a default "Main" one
         if (_configuration.Channels.Count == 0)
         {
             _configuration.Channels.Add("Main", new LuaMediaChannelConfiguration());
@@ -157,6 +157,10 @@ public sealed class LuaMediaService : IDisposable
     }
 
     // ================= SETTINGS =================
+
+    public bool IsPaused(string channel) => _channels.TryGetValue(channel, out var mediachannel) && mediachannel.IsPaused;
+    public bool IsPlaying(string channel) => _channels.TryGetValue(channel, out var mediachannel) && mediachannel.IsPlaying;
+    public bool IsStopped(string channel) => _channels.TryGetValue(channel, out var mediachannel) && mediachannel.IsStopped;
 
     public void SetVolume(string channel, int volume)
     {
