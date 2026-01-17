@@ -10,9 +10,9 @@
 | `loggerlib`   | Библиотека позволяет отправлять `Log` сообщения в консоль и `log file`         | [DOC](Libs/LoggerLib.md)   |
 | `medialib`    | Библиотека позволяет взаимодействовать с аудио/видое файлами                   | [DOC](Libs/MediaLib.md)    |
 | `pointslib`   | Библиотека позволяет взаимодействовать с системой очков                        | [DOC](Libs/PointsLib.md)   |
-| `storagelib`  | Библиотека позволяет взаимодейстовать со специальным хранилищем данных         | [DOC](Libs/HardwareLib.md) |
-| `twitchlib`   | Библиотека позволяет взаимодейстовать с Twitch                                 | [DOC](Libs/HardwareLib.md) |
-| `twitchlib`   | Библиотека, содержащая в себе полезные инструменты для создания `LuaReactions` | [DOC](Libs/HardwareLib.md) |
+| `storagelib`  | Библиотека позволяет взаимодейстовать со специальным хранилищем данных         | [DOC](Libs/StorageLib.md)  |
+| `twitchlib`   | Библиотека позволяет взаимодейстовать с Twitch                                 | [DOC](Libs/TwitchLib.md)   |
+| `utilslib`    | Библиотека, содержащая в себе полезные инструменты для создания `LuaReactions` | [DOC](Libs/UtilsLib.md)    |
 
 ## Требования к файлу `LuaReaction`
 

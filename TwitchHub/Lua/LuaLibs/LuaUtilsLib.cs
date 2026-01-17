@@ -33,7 +33,7 @@ public sealed partial class LuaUtilsLib
 
     [LuaMember]
     public async Task Delay(int delay) => await Task.Delay(TimeSpan.FromMilliseconds(delay));
-    
+
 
     // ================= LUA TABLES UTILS =================
 
@@ -111,7 +111,7 @@ public sealed partial class LuaUtilsLib
     [LuaMember]
     public string TableToJson(LuaTable table)
         => LuaJsonConverter.ToJson(table)?.ToJsonString() ?? string.Empty;
-    
+
     [LuaMember]
     public LuaTable StringSplit(string str, string delim = " ")
     {
@@ -145,12 +145,6 @@ public sealed partial class LuaUtilsLib
     public LuaValue GetCurrentTimeUtc() => DateTime.UtcNow.Ticks;
 
     [LuaMember]
-    public LuaValue GetCurrentTimeOffset() => DateTimeOffset.Now.Ticks;
-
-    [LuaMember]
-    public LuaValue GetCurrentTimeOffsetUtc() => DateTimeOffset.UtcNow.Ticks;
-
-    [LuaMember]
     public string FormatDateTime(long ticks, string format = "yyyy-MM-dd HH:mm:ss")
     {
         try
@@ -177,37 +171,11 @@ public sealed partial class LuaUtilsLib
     }
 
     [LuaMember]
-    public string FormatDateTimeOffset(long ticks, string format = "yyyy-MM-dd HH:mm:ss zzz")
-    {
-        try
-        {
-            return new DateTimeOffset(ticks, TimeSpan.Zero).ToString(format);
-        }
-        catch
-        {
-            return string.Empty;
-        }
-    }
-
-    [LuaMember]
     public LuaValue ParseDateTime(string dateString)
     {
         try
         {
             return DateTime.Parse(dateString).Ticks;
-        }
-        catch
-        {
-            return LuaValue.Nil;
-        }
-    }
-
-    [LuaMember]
-    public LuaValue ParseDateTimeOffset(string dateString)
-    {
-        try
-        {
-            return DateTimeOffset.Parse(dateString).Ticks;
         }
         catch
         {
@@ -283,6 +251,4 @@ public sealed partial class LuaUtilsLib
     [LuaMember]
     public bool IsBefore(long ticks1, long ticks2) => ticks1 < ticks2;
 
-    [LuaMember]
-    public bool IsEqual(long ticks1, long ticks2) => ticks1 == ticks2;
 }
