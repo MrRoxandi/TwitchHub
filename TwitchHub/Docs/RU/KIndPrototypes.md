@@ -21,7 +21,7 @@
 | `MouseUp`          | `function(keycode)`                                      |
 | `MouseClick`       | `function(keycode)`                                      |
 | `MouseMove`        | `function(x, y)`                                         |
-| `MouseWheel`       | `function()`                                             |
+| `MouseWheel`       | `function(delta, direction)`                             |
 | `MediaAdd`         | `function(channelname, source, queuepos)`                |
 | `MediaStart`       | `function(channelname, source, startedat)`               |
 | `MediaSkip`        | `function(channelname, source, skippedat)`               |

@@ -83,10 +83,10 @@ public sealed class LuaHardwareService : IHostedService, IDisposable
     }
 
     private void MouseMoved(object? sender, MouseHookEventArgs e) => _ = Task.Run(async () => await _reactions.CallAsync(LuaReactionKind.MouseMove, e.Data.X, e.Data.Y));
-    private void MouseWheel(object? sender, MouseHookEventArgs e) => _ = Task.Run(async () => await _reactions.CallAsync(LuaReactionKind.MouseWheel));
+    private void MouseWheel(object? sender, MouseWheelHookEventArgs e) => _ = Task.Run(async () => await _reactions.CallAsync(LuaReactionKind.MouseWheel, e.Data.Delta, e.Data.Direction.ToString()));
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        _ = Task.Run(_hook.RunAsync);
+        _ = Task.Run(_hook.RunAsync, cancellationToken);
         return Task.CompletedTask;
     }
     public Task StopAsync(CancellationToken cancellationToken)
@@ -98,7 +98,10 @@ public sealed class LuaHardwareService : IHostedService, IDisposable
     public void Dispose()
     {
         if (IsDisposed)
+        {
             return;
+        }
+
         _hook.Dispose();
         UnhookEvents();
     }
