@@ -7,7 +7,7 @@ public sealed class LuaReaction(
     LuaReactionKind kind,
     LuaState state,
     LuaFunction oncall,
-    LuaFunction onerror,
+    LuaFunction? onerror,
     long cooldownMili = 0)
 {
     public string Name = Path.GetFileNameWithoutExtension(filePath);
@@ -18,7 +18,7 @@ public sealed class LuaReaction(
 
     public DateTimeOffset LastExecuted { get; private set; } = DateTimeOffset.MinValue;
     private readonly LuaFunction _action = oncall;
-    private readonly LuaFunction _onError = onerror;
+    private readonly LuaFunction? _onError = onerror;
     private readonly LuaState _luaState = state;
 
     public async Task<LuaCallResult> CallAsync(params LuaValue[] args)
@@ -28,7 +28,7 @@ public sealed class LuaReaction(
             Success = true,
             Result = LuaValue.Nil
         };
-        
+
         if (!IsEnabled || LastExecuted.Add(CoolDown) >= DateTimeOffset.UtcNow)
             return CallResult;
         try
@@ -40,10 +40,17 @@ public sealed class LuaReaction(
         catch (Exception ex)
         {
             var callTime = DateTimeOffset.UtcNow.Ticks;
-            var result = await _luaState.CallAsync(_onError, [Name, ex.Message, callTime]);
             CallResult.Success = false;
             CallResult.ErrorMessage = ex.Message;
-            CallResult.Result = result.FirstOrDefault(LuaValue.Nil);
+            if (_onError is not null)
+            {
+                var callres = await _luaState.CallAsync(_onError, [Name, ex.Message, calltime]);
+                CallResult.Result = callres.FirstOrDefault(LuaValue.Nil);
+            }
+            else
+            {
+                CallResult.Result = LuaValue.Nil;
+            }
         }
 
         return CallResult;

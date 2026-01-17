@@ -74,8 +74,8 @@ public sealed class TwitchClipPoller(
             .FirstOrDefaultAsync(ct);
 
         var startedAt = lastClipTime == default
-            ? DateTime.Now.AddYears(-2)             
-            : lastClipTime.AddSeconds(1);   
+            ? DateTime.Now.AddYears(-2)
+            : lastClipTime.AddSeconds(1);
 
         GetClipsResponse? response = null;
         string? cursor = null;
@@ -118,6 +118,7 @@ public sealed class TwitchClipPoller(
                     clip.Id,
                     clip.Url,
                     clip.Title,
+                    clip.CreatorId,
                     clip.CreatorName,
                     clip.Duration);
             }

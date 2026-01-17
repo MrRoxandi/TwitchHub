@@ -3,15 +3,6 @@ using System.Collections.Concurrent;
 
 namespace TwitchHub.Lua.Services;
 
-// CallResult Call(string name, ReactionKind kind)
-//      CallResult -> bool Success, string? ErrorMessage, LuaValue Result
-// CallResult Call(LuaReaction)
-// Span<LuaReaction> Get(ReactionKind)
-// LuaReaction Get(string name)
-// ReactionKind:
-// - Twitch: Command, Reward, Message, Follow, Subscribe, GiftSubscribe, Cheers, Clip
-// - Hardware: KeyDown, KeyUp, KeyType, MouseDown, MouseUp, MouseClick, MouseMove, MouseWheel
-// - Media: OnMediaAdded, OnMediaStarted, OnMediaSkipped, OnMediaPaused, OnMediaStopped, OnMediaEndReached, QueueFinished, OnError 
 public sealed class LuaReactionsService(ILogger<LuaReactionsService> logger)
 {
     private readonly ConcurrentDictionary<string, LuaReaction> _reactions = [];
@@ -43,13 +34,14 @@ public sealed class LuaReactionsService(ILogger<LuaReactionsService> logger)
 
             if (config["onerror"].Type is not LuaValueType.Function)
             {
-                throw new ArgumentException($"Invalid 'onerror' property on reaction in file: {filePath}");
+                _logger.LogDebug("Invalid 'onerror' property on reaction in file: {filePath}", filePath);
             }
 
             var oncall = config["oncall"].Read<LuaFunction>();
-            var onerror = config["onerror"].Read<LuaFunction>();
+            var onerror = config["onerror"].Type == LuaValueType.Function ? config["onerror"].Read<LuaFunction>() : null;
             var cooldown = 0L;
-            if (config.ContainsKey("cooldown"))
+
+            if (config.ContainsKey("cooldown") && config["cooldown"].Type == LuaValueType.Number)
             {
                 cooldown = config["cooldown"].Read<long>();
             }

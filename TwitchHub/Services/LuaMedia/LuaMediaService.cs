@@ -276,9 +276,9 @@ public sealed class LuaMediaService : IDisposable
         _logger.LogDebug("Queue finished in channel {Channel}", args.ChannelName);
         await _luaReactions.CallAsync(LuaReactionKind.MediaQueueFinish, args.ChannelName);
     }
-    public Task OnError(object? sender, MediaErrorEventArgs args)
+    public async Task OnError(object? sender, MediaErrorEventArgs args)
     {
         _logger.LogError(args.Exception, "Error in channel {Channel} for source {Source} at {ErrorTime}", args.ChannelName, args.Source, args.ErrorTime);
-        return Task.CompletedTask;
+        await _luaReactions.CallAsync(LuaReactionKind.MediaError, args.ChannelName, args.Source ?? string.Empty, args.ErrorTime.Ticks);
     }
 }
