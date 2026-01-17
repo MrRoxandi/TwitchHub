@@ -2,7 +2,7 @@
 
 > This project consolidates essential Twitch streaming tools into one platform, including music playback, keyboard and mouse emulation, and data storage. All features are activated via various events system.
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/MrRoxandi/TTvActionHub)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/MrRoxandi/TwitchHub)
 
 ## Features
 
