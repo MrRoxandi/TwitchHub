@@ -134,11 +134,6 @@ public sealed class TwitchChatClient : IHostedService, IDisposable
     private async Task OnChatCommandReceived(object? sender, OnChatCommandReceivedArgs e)
     {
         _logger.LogDebug("Recieved command '{command}' from '{username}'", e.Command.Name, e.ChatMessage.Username);
-        if (!_reactions.Get(LuaReactionKind.Command)
-            .Any(r => r.Name.Equals(e.Command.Name, StringComparison.OrdinalIgnoreCase)))
-        {
-            return;
-        }
 
         await _reactions.CallAsync(e.Command.Name, LuaReactionKind.Command,
             e.ChatMessage.Username, e.ChatMessage.UserId, e.Command.ArgumentsAsString);

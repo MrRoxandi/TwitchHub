@@ -10,24 +10,24 @@ public sealed partial class LuaStorageLib(LuaDataContainer container)
 
     // ================= FILE OPERATIONS =================
 
-    [LuaMember]
+    [LuaMember("load")]
     public async Task Load() => await _container.LoadAsync();
 
-    [LuaMember]
+    [LuaMember("save")]
     public async Task Save() => await _container.SaveAsync();
 
-    [LuaMember]
+    [LuaMember("backup")]
     public async Task Backup(string? suffix = null) => await _container.BackupAsync(suffix);
 
     // ================= QUERY =================
 
-    [LuaMember]
+    [LuaMember("contains")]
     public bool Contains(string key) => _container.Contains(key);
 
-    [LuaMember]
+    [LuaMember("count")]
     public int Count() => _container.Count;
 
-    [LuaMember]
+    [LuaMember("keys")]
     public LuaValue Keys()
     {
         var table = new LuaTable();
@@ -41,20 +41,20 @@ public sealed partial class LuaStorageLib(LuaDataContainer container)
 
     // ================= GET =================
 
-    [LuaMember]
+    [LuaMember("get")]
     public LuaValue Get(string key) => _container.Get<LuaValue>(key);
 
     // ================= SET =================
 
-    [LuaMember]
+    [LuaMember("set")]
     public void Set(string key, LuaValue value) => _container.Set(key, value);
     
     // ================= REMOVE & CLEAR =================
 
-    [LuaMember]
+    [LuaMember("remove")]
     public bool Remove(string key) => _container.Remove(key);
 
-    [LuaMember]
+    [LuaMember("clear")]
     public void Clear() => _container.Clear();
 
     

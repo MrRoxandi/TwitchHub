@@ -8,7 +8,7 @@ public sealed partial class LuaMediaLib(LuaMediaService service)
 {
     private readonly LuaMediaService _service = service;
 
-    [LuaMember]
+    [LuaMember("channels")]
     private LuaTable Channels()
     {
         var table = new LuaTable();
@@ -20,29 +20,29 @@ public sealed partial class LuaMediaLib(LuaMediaService service)
         return table;
     }
 
-    [LuaMember]
+    [LuaMember("add")]
     public void Add(string channel, string filepath) => _service.Add(channel, filepath);
-    [LuaMember]
+    [LuaMember("start")]
     public void Start(string channel) => _service.Start(channel);
-    [LuaMember]
+    [LuaMember("stop")]
     public void Stop(string channel) => _service.Stop(channel);
-    [LuaMember]
+    [LuaMember("skip")]
     public void Skip(string channel) => _service.Skip(channel);
-    [LuaMember]
+    [LuaMember("pause")]
     public void Pause(string channel) => _service.Pause(channel);
-    [LuaMember]
+    [LuaMember("setvolume")]
     public void SetVolume(string channel, int volume) => _service.SetVolume(channel, volume);
-    [LuaMember]
+    [LuaMember("setspeed")]
     public void SetSpeed(string channel, float speed) => _service.SetSpeed(channel, speed);
-    [LuaMember]
+    [LuaMember("getvolume")]
     public int GetVolume(string channel) => _service.GetVolume(channel);
-    [LuaMember]
+    [LuaMember("getspeed")]
     public float GetSpeed(string channel) => _service.GetSpeed(channel);
-    [LuaMember]
+    [LuaMember("ispaused")]
     public bool IsPaused(string channel) => _service.IsPaused(channel);
-    [LuaMember]
+    [LuaMember("isplaying")]
     public bool IsPlaying(string channel) => _service.IsPlaying(channel);
-    [LuaMember]
+    [LuaMember("isstopped")]
     public bool IsStopped(string channel) => _service.IsStopped(channel);
 
 }

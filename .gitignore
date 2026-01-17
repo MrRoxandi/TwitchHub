@@ -366,3 +366,4 @@ FodyWeavers.xsd
 /TwitchHub/testconfig.lua
 *.dat
 /TwitchHub/configs/reactions
+/TwitchHub/configs/addons/test.lua

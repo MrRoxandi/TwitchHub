@@ -13,6 +13,7 @@
 | `ismoderator`        | `string userid`                   | Функция позволяет проверить является ли `userid` `moderator`                             |
 | `isvip`              | `string userid`                   | Функция позволяет проверить является ли `userid` `vip`                                   |
 | `isfollower`         | `string userid`                   | Функция позволяет проверить является ли `userid` `follower`                              |
+| `atleast`			   | `string userid`, `string rank`    | Функция позволяет проверить является ли `userid` хотябы `rank` (follower, vip и т.д.)    |
 | `getfollowedate`     | `string userid`                   | Функция позволяет получить дату, когда пользователь зафолловился на стримера, иначе `-1` |
 | `getstreamtitle`     | -                                 | Функция позволяет получить название текущего стрима                                      |
 | `getstreamgamename`  | -                                 | Функция позволяет получить название текущей игры на стриме                               |

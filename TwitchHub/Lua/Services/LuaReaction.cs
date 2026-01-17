@@ -13,7 +13,7 @@ public sealed class LuaReaction(
     public string Name = Path.GetFileNameWithoutExtension(filePath);
     public string FilePath { get; init; } = filePath;
     public LuaReactionKind Kind { get; init; } = kind;
-    public TimeSpan CoolDown { get; init; } = TimeSpan.FromMilliseconds(cooldownMili);
+    public double CoolDown { get; init; } = cooldownMili;
     public bool IsEnabled { get; set; } = true;
 
     public DateTimeOffset LastExecuted { get; private set; } = DateTimeOffset.MinValue;
@@ -29,7 +29,7 @@ public sealed class LuaReaction(
             Result = LuaValue.Nil
         };
 
-        if (!IsEnabled || LastExecuted.Add(CoolDown) >= DateTimeOffset.UtcNow)
+        if (!IsEnabled || LastExecuted.AddMilliseconds(CoolDown) >= DateTimeOffset.UtcNow)
             return CallResult;
         try
         {

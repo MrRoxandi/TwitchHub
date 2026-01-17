@@ -34,7 +34,7 @@ public sealed partial class LuaHardwareLib
     private readonly int _minKey;
     private readonly int _maxKey;
 
-    [LuaMember]
+    [LuaMember("keycodes")]
     public readonly LuaTable KeyCodes;
 
     public LuaHardwareLib(ILogger<LuaHardwareLib> logger, LuaBlockedKeys lbk)
@@ -54,7 +54,7 @@ public sealed partial class LuaHardwareLib
 
     // ================= KEYBOARD =================
 
-    [LuaMember]
+    [LuaMember("parsekeycode")]
     public int ParseKeyCode(string key)
     {
         if (string.IsNullOrWhiteSpace(key))
@@ -68,26 +68,26 @@ public sealed partial class LuaHardwareLib
             ? (int)code
             : (int)KeyCode.VcUndefined;
     }
-    [LuaMember]
+    [LuaMember("keycodetostring")]
     public string KeyCodeToString(int keycode)
     {
         var code = NormalizeKey(keycode);
         return code.ToString();
     }
 
-    [LuaMember]
+    [LuaMember("keydown")]
     public void KeyDown(int keyCode)
         => SimKey(keyCode, _simulator.SimulateKeyPress, "KeyDown");
 
-    [LuaMember]
+    [LuaMember("keyup")]
     public void KeyUp(int keyCode)
         => SimKey(keyCode, _simulator.SimulateKeyRelease, "KeyUp");
 
-    [LuaMember]
+    [LuaMember("keytap")]
     public void KeyTap(int keyCode)
         => SimKey(keyCode, k => _simulator.SimulateKeyStroke([k]), "KeyTap");
 
-    [LuaMember]
+    [LuaMember("keyhold")]
     public async Task KeyHold(int keyCode, int durationMs)
     {
         if (durationMs < 300)
@@ -109,35 +109,35 @@ public sealed partial class LuaHardwareLib
         _logger.LogDebug("KeyHold ({key}) {duration}ms", key, durationMs);
     }
 
-    [LuaMember]
+    [LuaMember("typetext")]
     public void TypeText(string text)
     {
         var result = _simulator.SimulateTextEntry(text);
         _logger.LogDebug("TypeText ({text}): {result}", text, result);
     }
 
-    [LuaMember]
+    [LuaMember("keyisblocked")]
     public bool KeyIsBlocked(int keyCode)
     {
         var code = NormalizeKey(keyCode);
         return _luaBlocked.IsBlocked(code);
     }
 
-    [LuaMember]
+    [LuaMember("keyblock")]
     public void KeyBlock(int keyCode)
     {
         var code = NormalizeKey(keyCode);
         _luaBlocked.Block(code);
     }
 
-    [LuaMember]
+    [LuaMember("keyunblock")]
     public void KeyUnBlock(int keyCode)
     {
         var code = NormalizeKey(keyCode);
         _luaBlocked.Unblock(code);
     }
 
-    [LuaMember]
+    [LuaMember("keytoggle")]
     public void KeyToggle(int keyCode)
     {
         var code = NormalizeKey(keyCode);
@@ -146,27 +146,27 @@ public sealed partial class LuaHardwareLib
 
     // ================= MOUSE =================
 
-    [LuaMember]
+    [LuaMember("parsemousebutton")]
     public int ParseMouseButton(string button)
         => _mouseMap.TryGetValue(button?.Trim() ?? "", out var b)
             ? (int)b
             : (int)MouseButton.NoButton;
-    [LuaMember]
+    [LuaMember("buttontostring")]
     public string ButtonToString(int button)
     {
         var code = NormalizeButton(button);
         return code.ToString();
     }
 
-    [LuaMember]
+    [LuaMember("mousedown")]
     public void MouseDown(int buttonCode)
         => SimMouse(buttonCode, _simulator.SimulateMousePress, "MouseDown");
 
-    [LuaMember]
+    [LuaMember("mouseup")]
     public void MouseUp(int buttonCode)
         => SimMouse(buttonCode, _simulator.SimulateMouseRelease, "MouseUp");
 
-    [LuaMember]
+    [LuaMember("mouseclick")]
     public void MouseClick(int buttonCode)
     {
         var button = NormalizeButton(buttonCode);
@@ -178,7 +178,7 @@ public sealed partial class LuaHardwareLib
         _logger.LogDebug("MouseClick ({button}): {result}", button, result);
     }
 
-    [LuaMember]
+    [LuaMember("mousehold")]
     public async Task MouseHold(int buttonCode, int durationMs)
     {
         if (durationMs < 300)
@@ -200,44 +200,44 @@ public sealed partial class LuaHardwareLib
         _logger.LogDebug("MouseHold ({button}) {duration}ms", button, durationMs);
     }
 
-    [LuaMember]
+    [LuaMember("scrollvertical")]
     public void ScrollVertical(int delta)
         => _simulator.SimulateMouseWheel((short)delta, MouseWheelScrollDirection.Vertical);
 
-    [LuaMember]
+    [LuaMember("scrollhorizontal")]
     public void ScrollHorizontal(int delta)
         => _simulator.SimulateMouseWheel((short)delta, MouseWheelScrollDirection.Horizontal);
 
-    [LuaMember]
+    [LuaMember("setmouseposition")]
     public void SetMousePosition(int x, int y)
         => _simulator.SimulateMouseMovement((short)x, (short)y);
 
-    [LuaMember]
+    [LuaMember("movemouse")]
     public void MoveMouse(int dx, int dy)
         => _simulator.SimulateMouseMovementRelative((short)dx, (short)dy);
 
-    [LuaMember]
+    [LuaMember("buttonisblocked")]
     public bool ButtonIsBlocked(int keyCode)
     {
         var code = NormalizeButton(keyCode);
         return _luaBlocked.IsBlocked(code);
     }
 
-    [LuaMember]
+    [LuaMember("buttonblock")]
     public void ButtonBlock(int keyCode)
     {
         var code = NormalizeButton(keyCode);
         _luaBlocked.Block(code);
     }
 
-    [LuaMember]
+    [LuaMember("buttonunblock")]
     public void ButtonUnBlock(int keyCode)
     {
         var code = NormalizeButton(keyCode);
         _luaBlocked.Unblock(code);
     }
 
-    [LuaMember]
+    [LuaMember("buttontoggle")]
     public void ButtonToggle(int keyCode)
     {
         var code = NormalizeKey(keyCode);

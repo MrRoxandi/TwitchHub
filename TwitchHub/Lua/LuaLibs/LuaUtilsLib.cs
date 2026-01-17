@@ -12,17 +12,17 @@ public sealed partial class LuaUtilsLib
 
     // ================= RANDOM =================
 
-    [LuaMember]
+    [LuaMember("randomnumber")]
     public LuaValue RandomNumber(int min, int max) => _random.Next(min, max);
 
-    [LuaMember]
+    [LuaMember("randomdouble")]
     public LuaValue RandomDouble(double min, double max) => ((max - min) * _random.NextDouble()) + min;
-    [LuaMember]
+    [LuaMember("randomstring")]
     public LuaValue RandomString(int length) => length > 0
         ? new string(_random.GetItems(Chars.AsSpan(), length))
         : string.Empty;
 
-    [LuaMember]
+    [LuaMember("randomposition")]
     public LuaValue RandomPosition(int minx, int maxx, int miny, int maxy)
         => new LuaTable
         {
@@ -31,18 +31,18 @@ public sealed partial class LuaUtilsLib
         };
     // ================= OTHER UTILS =================
 
-    [LuaMember]
+    [LuaMember("delay")]
     public async Task Delay(int delay) => await Task.Delay(TimeSpan.FromMilliseconds(delay));
 
 
     // ================= LUA TABLES UTILS =================
 
-    [LuaMember]
+    [LuaMember("isluaarray")]
     public bool IsLuaArray(LuaTable table) => table.ArrayLength != 0 && table.HashMapCount == 0;
-    [LuaMember]
+    [LuaMember("istableemty")]
     public bool IsTableEmpty(LuaTable table) => table.ArrayLength == 0 && table.HashMapCount == 0;
 
-    [LuaMember]
+    [LuaMember("tablecontains")]
     public bool TableContains(LuaTable table, LuaValue value)
     {
         if (IsLuaArray(table))
@@ -66,7 +66,7 @@ public sealed partial class LuaUtilsLib
 
         return false;
     }
-    [LuaMember]
+    [LuaMember("tablerandom")]
     public LuaValue TableRandom(LuaTable table)
     {
         if (IsTableEmpty(table))
@@ -83,7 +83,7 @@ public sealed partial class LuaUtilsLib
         var index = _random.Next(table.Count());
         return table.ElementAt(index).Value;
     }
-    [LuaMember]
+    [LuaMember("tablecopy")]
     public LuaTable TableCopy(LuaTable table)
     {
         var result = new LuaTable(table.ArrayLength, table.HashMapCount);
@@ -95,7 +95,7 @@ public sealed partial class LuaUtilsLib
         return result;
     }
 
-    [LuaMember]
+    [LuaMember("tableshuffle")]
     public LuaValue TableShuffle(LuaTable table)
     {
         var result = TableCopy(table);
@@ -103,20 +103,24 @@ public sealed partial class LuaUtilsLib
         return result;
     }
 
-    [LuaMember]
+    [LuaMember("tablejoin")]
     public string TableJoin(LuaTable table, string sep = ", ")
         => IsLuaArray(table)
             ? string.Join(sep, table.Select(e => e.Value.ToString()))
             : string.Join(sep, table.Select(e => $"[{e.Key}]: {e.Value}"));
-    [LuaMember]
+    [LuaMember("tabletojson")]
     public string TableToJson(LuaTable table)
         => LuaJsonConverter.ToJson(table)?.ToJsonString() ?? string.Empty;
 
-    [LuaMember]
+    [LuaMember("stringsplit")]
     public LuaTable StringSplit(string str, string delim = " ")
     {
         var result = new LuaTable();
-        foreach (var (idx, part) in str
+        var trimmed = str.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+            return result;
+
+        foreach (var (idx, part) in trimmed
             .Split(delim, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Index()
             )
@@ -127,24 +131,22 @@ public sealed partial class LuaUtilsLib
         return result;
     }
 
-    [LuaMember]
+    [LuaMember("stringfmt")]
     public string StringFormat(string str, LuaTable table)
     {
-        LuaValue[] luaValues = IsLuaArray(table)
-            ? [.. table.GetArraySpan()]
-            : [.. table.Select(kvp => kvp.Value)];
+        ReadOnlySpan<object?> luaValues = [.. table.Select(kvp => kvp.Value)];
         return string.Format(str, luaValues);
     }
 
     // ================= DATETIME UTILS =================
 
-    [LuaMember]
+    [LuaMember("getcurrenttime")]
     public LuaValue GetCurrentTime() => DateTime.Now.Ticks;
 
-    [LuaMember]
+    [LuaMember("getcurrenttimeutc")]
     public LuaValue GetCurrentTimeUtc() => DateTime.UtcNow.Ticks;
 
-    [LuaMember]
+    [LuaMember("formatdatetime")]
     public string FormatDateTime(long ticks, string format = "yyyy-MM-dd HH:mm:ss")
     {
         try
@@ -157,7 +159,7 @@ public sealed partial class LuaUtilsLib
         }
     }
 
-    [LuaMember]
+    [LuaMember("formatdatetimeutc")]
     public string FormatDateTimeUtc(long ticks, string format = "yyyy-MM-dd HH:mm:ss")
     {
         try
@@ -170,7 +172,7 @@ public sealed partial class LuaUtilsLib
         }
     }
 
-    [LuaMember]
+    [LuaMember("parsedatetime")]
     public LuaValue ParseDateTime(string dateString)
     {
         try
@@ -183,7 +185,7 @@ public sealed partial class LuaUtilsLib
         }
     }
 
-    [LuaMember]
+    [LuaMember("getdatetimecomponents")]
     public LuaTable GetDateTimeComponents(long ticks)
     {
         var dt = new DateTime(ticks);
@@ -201,7 +203,7 @@ public sealed partial class LuaUtilsLib
         };
     }
 
-    [LuaMember]
+    [LuaMember("gettimedifference")]
     public LuaValue GetTimeDifference(long ticks1, long ticks2)
     {
         var dt1 = new DateTime(ticks1);
@@ -209,7 +211,7 @@ public sealed partial class LuaUtilsLib
         return Math.Abs((dt2 - dt1).Ticks);
     }
 
-    [LuaMember]
+    [LuaMember("gettimedifferenctcomponents")]
     public LuaTable GetTimeDifferenceComponents(long ticks1, long ticks2)
     {
         var dt1 = new DateTime(ticks1);
@@ -229,26 +231,26 @@ public sealed partial class LuaUtilsLib
         };
     }
 
-    [LuaMember]
+    [LuaMember("addseconds")]
     public LuaValue AddSeconds(long ticks, double seconds)
         => new DateTime(ticks).AddSeconds(seconds).Ticks;
 
-    [LuaMember]
+    [LuaMember("addminutes")]
     public LuaValue AddMinutes(long ticks, double minutes)
         => new DateTime(ticks).AddMinutes(minutes).Ticks;
 
-    [LuaMember]
+    [LuaMember("addhours")]
     public LuaValue AddHours(long ticks, double hours)
         => new DateTime(ticks).AddHours(hours).Ticks;
 
-    [LuaMember]
+    [LuaMember("adddays")]
     public LuaValue AddDays(long ticks, double days)
         => new DateTime(ticks).AddDays(days).Ticks;
 
-    [LuaMember]
+    [LuaMember("isafter")]
     public bool IsAfter(long ticks1, long ticks2) => ticks1 > ticks2;
 
-    [LuaMember]
+    [LuaMember("isbefore")]
     public bool IsBefore(long ticks1, long ticks2) => ticks1 < ticks2;
 
 }

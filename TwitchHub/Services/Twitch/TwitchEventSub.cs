@@ -57,7 +57,7 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
         _ = await Task.Delay(TimeSpan.FromSeconds(5))
             .ContinueWith(async (state) =>
             {
-                _ = await _client.ConnectAsync();
+                _ = await _client.ReconnectAsync();
             });
     }
     public async Task StartAsync(CancellationToken cancellationToken) => await _client.ConnectAsync();
@@ -175,7 +175,9 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
         if (!_disposed)
         {
             await Task.Delay(TimeSpan.FromSeconds(5));
-            await _client.ReconnectAsync();
+            if (string.IsNullOrEmpty(await _tokenProvider.GetAccessTokenAsync()))
+                return;
+            _ = await _client.ReconnectAsync();
         }
     }
 
