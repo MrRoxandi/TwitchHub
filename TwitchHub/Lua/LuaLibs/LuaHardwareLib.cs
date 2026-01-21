@@ -50,6 +50,8 @@ public sealed partial class LuaHardwareLib
             KeyCodes[name] = (int)code;
             KeyCodes[name.ToLowerInvariant()] = (int)code;
         }
+
+        _logger.LogInformation("Library is loaded");
     }
 
     // ================= KEYBOARD =================
@@ -58,21 +60,33 @@ public sealed partial class LuaHardwareLib
     public int ParseKeyCode(string key)
     {
         if (string.IsNullOrWhiteSpace(key))
+        {
+            _logger.LogWarning("ParseKeyCode called with empty or null string.");
             return (int)KeyCode.VcUndefined;
+        }
 
-        var span = key.AsSpan().Trim();
-        if (span.StartsWith("Vc", StringComparison.OrdinalIgnoreCase))
-            span = span[2..].Trim();
+        var mappedKey = key.StartsWith("vc", StringComparison.OrdinalIgnoreCase)
+            ? key
+            : $"vc{key}";
+        var result = Enum.TryParse<KeyCode>(mappedKey, true, out var code)
+            ? code
+            : KeyCode.VcUndefined;
 
-        return _keyboardMap.TryGetValue(span.ToString(), out var code)
-            ? (int)code
-            : (int)KeyCode.VcUndefined;
+        if (result == KeyCode.VcUndefined)
+        {
+            _logger.LogDebug("ParseKeyCode failed to parse: '{Key}'", key);
+        }
+
+        return (int)result;
     }
-    [LuaMember("keycodetostring")]
-    public string KeyCodeToString(int keycode)
+
+    [LuaMember("keytostring")]
+    public string KeyToString(int keycode)
     {
         var code = NormalizeKey(keycode);
-        return code.ToString();
+        var result = code.ToString()[2..];
+        _logger.LogDebug("KeyToString: {keyCode} -> {str}", keycode, result);
+        return result;
     }
 
     [LuaMember("keydown")]
@@ -106,21 +120,23 @@ public sealed partial class LuaHardwareLib
             _ = _simulator.SimulateKeyRelease(key);
         }
 
-        _logger.LogDebug("KeyHold ({key}) {duration}ms", key, durationMs);
+        _logger.LogDebug("KeyHold: {key} for {duration}ms", key, durationMs);
     }
 
     [LuaMember("typetext")]
     public void TypeText(string text)
     {
         var result = _simulator.SimulateTextEntry(text);
-        _logger.LogDebug("TypeText ({text}): {result}", text, result);
+        _logger.LogDebug("TypeText: {text} -> {result}", text, result);
     }
 
     [LuaMember("keyisblocked")]
     public bool KeyIsBlocked(int keyCode)
     {
         var code = NormalizeKey(keyCode);
-        return _luaBlocked.IsBlocked(code);
+        var state = _luaBlocked.IsBlocked(code);
+        _logger.LogDebug("KeyIsBlocked: {code} -> {state}", code, state);
+        return state;
     }
 
     [LuaMember("keyblock")]
@@ -128,6 +144,7 @@ public sealed partial class LuaHardwareLib
     {
         var code = NormalizeKey(keyCode);
         _luaBlocked.Block(code);
+        _logger.LogDebug("KeyBlock: {code}", code);
     }
 
     [LuaMember("keyunblock")]
@@ -135,27 +152,37 @@ public sealed partial class LuaHardwareLib
     {
         var code = NormalizeKey(keyCode);
         _luaBlocked.Unblock(code);
+        _logger.LogDebug("KeyUnBlock: {code}", code);
     }
 
     [LuaMember("keytoggle")]
     public void KeyToggle(int keyCode)
     {
         var code = NormalizeKey(keyCode);
+        var oldState = _luaBlocked.IsBlocked(code);
         _luaBlocked.ToggleBlock(code);
+        _logger.LogDebug("KeyToggle: {code} -> [{oldStae} -> {newState}]", code, oldState, !oldState);
     }
 
     // ================= MOUSE =================
 
     [LuaMember("parsemousebutton")]
     public int ParseMouseButton(string button)
-        => _mouseMap.TryGetValue(button?.Trim() ?? "", out var b)
-            ? (int)b
-            : (int)MouseButton.NoButton;
+    {
+        var result = _mouseMap.TryGetValue(button?.Trim() ?? "", out var b)
+                ? (int)b
+                : (int)MouseButton.NoButton;
+        _logger.LogDebug("ParseMouseButton: {button} -> {result}", button, result);
+        return result;
+    }
+
     [LuaMember("buttontostring")]
     public string ButtonToString(int button)
     {
         var code = NormalizeButton(button);
-        return code.ToString();
+        var result = code.ToString();
+        _logger.LogDebug("ButtonToString: {button} -> {result}", button, result);
+        return result;
     }
 
     [LuaMember("mousedown")]
@@ -170,12 +197,12 @@ public sealed partial class LuaHardwareLib
     public void MouseClick(int buttonCode)
     {
         var button = NormalizeButton(buttonCode);
-        var result = _simulator.Sequence()
+        _ = _simulator.Sequence()
             .AddMousePress(button)
             .AddMouseRelease(button)
             .Simulate();
 
-        _logger.LogDebug("MouseClick ({button}): {result}", button, result);
+        _logger.LogDebug("MouseClick: {button}", button);
     }
 
     [LuaMember("mousehold")]
@@ -197,7 +224,7 @@ public sealed partial class LuaHardwareLib
             _ = _simulator.SimulateMouseRelease(button);
         }
 
-        _logger.LogDebug("MouseHold ({button}) {duration}ms", button, durationMs);
+        _logger.LogDebug("MouseHold: {button} for {duration}ms", button, durationMs);
     }
 
     [LuaMember("scrollvertical")]
