@@ -10,44 +10,56 @@ public class LuaSharedManager : IDisposable, IHostedService
 {
     private readonly ILogger<LuaSharedManager> _logger;
     private readonly LuaReactionsService _luaReactions;
-    private readonly FileSystemWatcher _watcher;
+    private readonly LuaScriptsSerivce _luaScripts;
+    private readonly FileSystemWatcher _reactionsWatcher;
+    private readonly FileSystemWatcher _scriptsWatcher;
     private readonly string _reactionsPath;
+    private readonly string _scriptsPath;
     private readonly LuaState _state;
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _debounceTokens = [];
     public LuaSharedManager(
         ILogger<LuaSharedManager> logger,
         IServiceProvider serviceProvider,
         IWebHostEnvironment env,
-        LuaReactionsService luaReactions
-        //LuaState state
+        LuaReactionsService luaReactions,
+        LuaScriptsSerivce luaScripts
         )
     {
         _logger = logger;
         _luaReactions = luaReactions;
+        _luaScripts = luaScripts;
         _state = LuaState.Create();
 
         _reactionsPath = Path.Combine(env.ContentRootPath, "configs", "reactions");
+        _scriptsPath = Path.Combine(env.ContentRootPath, "configs", "scripts");
         _ = Directory.CreateDirectory(_reactionsPath);
+        _ = Directory.CreateDirectory(_scriptsPath);
 
         _state.Environment["hardwarelib"] = serviceProvider.GetRequiredService<LuaHardwareLib>();
         _state.Environment["loggerlib"] = serviceProvider.GetRequiredService<LuaLoggerLib>();
         _state.Environment["medialib"] = serviceProvider.GetRequiredService<LuaMediaLib>();
         _state.Environment["pointslib"] = serviceProvider.GetRequiredService<LuaPointsLib>();
+        _state.Environment["scriptlib"] = serviceProvider.GetRequiredService<LuaScriptLib>();
         _state.Environment["storagelib"] = serviceProvider.GetRequiredService<LuaStorageLib>();
         _state.Environment["twitchlib"] = serviceProvider.GetRequiredService<LuaTwitchLib>();
         _state.Environment["utilslib"] = serviceProvider.GetRequiredService<LuaUtilsLib>();
         _state.OpenStandardLibraries();
 
-        _watcher = new FileSystemWatcher(_reactionsPath, "*.lua")
+        _reactionsWatcher = new FileSystemWatcher(_reactionsPath, "*.lua")
+        {
+            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.CreationTime,
+            EnableRaisingEvents = false
+        };
+        _scriptsWatcher = new FileSystemWatcher(_scriptsPath, "*.lua")
         {
             NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.CreationTime,
             EnableRaisingEvents = false
         };
 
-        _watcher.Changed += OnFileChanged;
-        _watcher.Created += OnFileChanged;
-        _watcher.Deleted += OnFileDeleted;
-        _watcher.Renamed += OnFileRenamed;
+        _reactionsWatcher.Changed += OnReactionFileChanged;
+        _reactionsWatcher.Created += OnReactionFileChanged;
+        _reactionsWatcher.Deleted += OnReactionFileDeleted;
+        _reactionsWatcher.Renamed += OnReactionFileRenamed;
 
     }
 
@@ -63,32 +75,53 @@ public class LuaSharedManager : IDisposable, IHostedService
             await ProcessFileAsync(file);
         }
 
-        _watcher.EnableRaisingEvents = true;
+        _reactionsWatcher.EnableRaisingEvents = true;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        _watcher.EnableRaisingEvents = false;
+        _reactionsWatcher.EnableRaisingEvents = false;
         return Task.CompletedTask;
     }
 
     // ================= File System Events =================
 
-    private void OnFileChanged(object sender, FileSystemEventArgs e) => DebounceFileEvent(e.FullPath, () => ProcessFileAsync(e.FullPath));
+        // ================= Reactions =================
+    private void OnReactionFileChanged(object sender, FileSystemEventArgs e) => DebounceFileEvent(e.FullPath, () => ProcessFileAsync(e.FullPath));
 
-    private void OnFileDeleted(object sender, FileSystemEventArgs e)
+    private void OnReactionFileDeleted(object sender, FileSystemEventArgs e)
     {
         _logger.LogInformation("File deleted: {Name}", e.Name);
         _luaReactions.RemoveReaction(e.FullPath);
     }
 
-    private void OnFileRenamed(object sender, RenamedEventArgs e)
+    private void OnReactionFileRenamed(object sender, RenamedEventArgs e)
     {
         _logger.LogInformation("File renamed: {OldName} -> {Name}", e.OldName, e.Name);
         _luaReactions.RemoveReaction(e.OldFullPath);
         DebounceFileEvent(e.FullPath, () => ProcessFileAsync(e.FullPath));
     }
 
+    // ================= Scripts =================
+
+    private void OnScriptFileCreated(object sender, FileSystemEventArgs e)
+    {
+        _logger.LogInformation("Script file created: {Name}", e.Name);
+        _luaScripts.UpdateScript(e.FullPath, _state);
+    }
+
+    private void OnScripFileDeleted(object sender, FileSystemEventArgs e)
+    {
+        _logger.LogInformation("Script file deleted: {Name}", e.Name);
+        _luaScripts.RemoveScript(e.FullPath);
+    }
+
+    private void OnScripFileRenamed(object sender, RenamedEventArgs e)
+    {
+        _logger.LogInformation("Scrip file was renamed: {OldName} -> {Name}", e.OldName, e.Name);
+        _luaScripts.RemoveScript(e.OldFullPath);
+        _luaScripts.UpdateScript(e.FullPath, _state);
+    }
     // ================= Logic =================
 
     private void DebounceFileEvent(string filePath, Func<Task> action)
@@ -170,7 +203,7 @@ public class LuaSharedManager : IDisposable, IHostedService
 
     public void Dispose()
     {
-        _watcher.Dispose();
+        _reactionsWatcher.Dispose();
         foreach (var cts in _debounceTokens.Values)
         {
             cts.Cancel();
