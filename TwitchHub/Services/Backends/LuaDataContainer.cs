@@ -1,5 +1,7 @@
-﻿using System.Collections.Concurrent;
+﻿using Microsoft.Extensions.Options;
+using System.Collections.Concurrent;
 using System.Text.Json;
+using TwitchHub.Configurations;
 
 namespace TwitchHub.Services.Backends;
 
@@ -9,13 +11,16 @@ public sealed class LuaDataContainer : IAsyncDisposable, IDisposable
     private readonly SemaphoreSlim _operationLock;
     private readonly ConcurrentDictionary<string, JsonElement> _cache;
     private readonly JsonSerializerOptions _jsonOptions;
-
+    private readonly LuaStorageContainerConfiguration _config;
     private volatile bool _disposed;
 
-    public LuaDataContainer(JsonSerializerOptions options, string? dataPath = null)
+    public LuaDataContainer(
+        JsonSerializerOptions options, 
+        IOptions<LuaStorageContainerConfiguration> config)
     {
-        _dataFilePath = dataPath ?? Path.Combine(
-            AppContext.BaseDirectory, "data", "data.json");
+        _config = config.Value;
+        _dataFilePath = Path.Combine(
+            AppContext.BaseDirectory, _config.StorageDirectory, "data.dat");
         _jsonOptions = options;
         _operationLock = new SemaphoreSlim(1, 1);
         _cache = [];

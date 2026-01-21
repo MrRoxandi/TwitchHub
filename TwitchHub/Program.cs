@@ -47,9 +47,12 @@ builder.Services.AddMudServices();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.Configure<TwitchConfiguration>(builder.Configuration.GetSection(TwitchConfiguration.SectionName));
-builder.Services.Configure<LuaMediaServiceConfiguration>(builder.Configuration.GetSection(LuaMediaServiceConfiguration.SectionName));
-
+builder.Services.Configure<TwitchConfiguration>
+    (builder.Configuration.GetSection(TwitchConfiguration.SectionName));
+builder.Services.Configure<LuaMediaServiceConfiguration>
+    (builder.Configuration.GetSection(LuaMediaServiceConfiguration.SectionName));
+builder.Services.Configure<LuaStorageContainerConfiguration>
+    (builder.Configuration.GetSection(LuaStorageContainerConfiguration.SectionName)));
 // -------------- TWITCH --------------
 
 builder.Services.AddDataProtection()
