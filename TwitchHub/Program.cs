@@ -113,7 +113,7 @@ builder.Services.AddSingleton<JsonSerializerOptions>(sp =>
 });
 builder.Services.AddSingleton<LuaBlockedKeys>();
 builder.Services.AddSingleton<LuaReactionsService>();
-builder.Services.AddSingleton<LuaScriptLib>();
+builder.Services.AddSingleton<LuaScriptsSerivce>();
 builder.Services.AddHostedService<LuaHardwareService>();
 builder.Services.AddHostedService<LuaSharedManager>();
 

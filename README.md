@@ -7,7 +7,7 @@
 ## Features
 
 - **TwitchService:**
-  - Fully customizable own events though Twitch Events (Chat messages, Chat comamnds, Subs and [other types](TwitchHub/Docs/EN/KindPrototypes.md))
+  - Fully customizable own events though Twitch Events: Chat messages, Chat comamnds, Subs and [other types](TwitchHub/Docs/EN/KindPrototypes.md)
 - **MediaService:**
   - Play any audio and video files with this service on separated channels
   - Suports output on local port and streamnames like: `http://127.0.0.1:port/streamname`

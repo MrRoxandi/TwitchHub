@@ -234,8 +234,8 @@ public sealed class LuaMediaService : IDisposable
         }
 
         _channels.Clear();
-        _libVlc.Dispose();
         _libVlc.Log -= OnLibVlcLog;
+        _libVlc.Dispose();
         _disposed = true;
     }
 
