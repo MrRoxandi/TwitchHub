@@ -56,9 +56,9 @@ public sealed class TwitchChatClient : IHostedService, IDisposable
 
         if (_client.IsConnected)
         {
-            await _client.DisconnectAsync();
+            return;
         }
-
+        
         var credentials = new ConnectionCredentials(_configuration.Channel, token);
         _client.Initialize(credentials);
 
@@ -75,7 +75,21 @@ public sealed class TwitchChatClient : IHostedService, IDisposable
     private async Task OnTokenRefreshedAsync(string newToken)
     {
         _logger.LogInformation("Token refreshed. Reconnecting Chat...");
-        await ConnectAsync(CancellationToken.None);
+        if (_client.IsConnected)
+        {
+            await _client.DisconnectAsync();
+            await Task.Delay(TimeSpan.FromSeconds(5));
+        }
+        var token = await _tokenProvider.GetAccessTokenAsync();
+        if (string.IsNullOrEmpty(token)) 
+        {
+            _logger.LogError("Failed to reconnect. Reason: got empty or null AccessToken");
+            return;
+        }
+
+        var newCreds = new ConnectionCredentials(_configuration.Channel, token);
+        _client.SetConnectionCredentials(newCreds);
+        _ = await _client.ConnectAsync();
     }
 
     // ---------- HOOKS ----------

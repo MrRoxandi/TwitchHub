@@ -38,13 +38,6 @@ public sealed partial class LuaTwitchLib(
         await _client.SendMessageAsync(CurrentChannel!, message);
     }
 
-    [LuaMember("sendreply")]
-    public async Task SendReply(string userId, string message)
-    {
-        EnsureChatReady();
-        await _client.SendReplyAsync(CurrentChannel!, userId, message);
-    }
-
     // ================= USERS =================
 
     [LuaMember("getuserid")]

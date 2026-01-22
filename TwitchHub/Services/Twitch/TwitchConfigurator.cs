@@ -30,9 +30,6 @@ public class TwitchConfigurator(
             _configuration.ClientId
         ) ?? throw new Exception("Failed to exchange code for token. Twitch API returned null.");
 
-        if (response == null)
-            throw new Exception("Failed to get token.");
-
         var store = TwitchTokenStore.From(response);
 
         _tokenProvider.SetNewToken(store);

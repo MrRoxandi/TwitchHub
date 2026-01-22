@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Globalization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using TwitchHub.Configurations;
 using TwitchHub.Lua.Services;
@@ -74,11 +75,15 @@ public sealed class TwitchClipPoller(
             .FirstOrDefaultAsync(ct);
 
         var startedAt = lastClipTime == default
-            ? DateTime.Now.AddYears(-2)
+            ? DateTime.UtcNow.AddYears(-2)
             : lastClipTime.AddSeconds(1);
 
         GetClipsResponse? response = null;
         string? cursor = null;
+        var existingIds = await dbContext.TwitchClips
+            .Select(c => c.ClipId)
+            .ToHashSetAsync(ct);
+
         do
         {
             response = await _api.Helix.Clips.GetClipsAsync(
@@ -88,15 +93,15 @@ public sealed class TwitchClipPoller(
                 first: 100,
                 after: cursor
             );
-            if (response.Clips == null || response.Clips.Length == 0)
+
+            if (response.Clips is not { Length: > 0 })
             {
-                return;
+                break;
             }
 
             foreach (var clip in response.Clips)
             {
-                var exists = await dbContext.TwitchClips.AnyAsync(c => c.ClipId == clip.Id, ct);
-                if (exists)
+                if (existingIds.Contains(clip.Id))
                 {
                     continue;
                 }
@@ -107,12 +112,12 @@ public sealed class TwitchClipPoller(
                     UserId = clip.CreatorId,
                     ChannelId = clip.BroadcasterId,
                     Title = clip.Title,
-                    CreatedAt = DateTime.Parse(clip.CreatedAt)
+                    CreatedAt = DateTimeOffset.Parse(clip.CreatedAt).UtcDateTime
                 };
 
                 _ = dbContext.TwitchClips.Add(entity);
 
-                _logger.LogInformation("New Clip Detected: {Title} by {Creator}", clip.Title, clip.CreatorName);
+                _logger.LogInformation("New Clip Found: {Title} by {Creator}", clip.Title, clip.CreatorName);
 
                 await _luaReactions.CallAsync(LuaReactionKind.Clip,
                     clip.Id,

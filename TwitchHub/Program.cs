@@ -52,7 +52,7 @@ builder.Services.Configure<TwitchConfiguration>
 builder.Services.Configure<LuaMediaServiceConfiguration>
     (builder.Configuration.GetSection(LuaMediaServiceConfiguration.SectionName));
 builder.Services.Configure<LuaStorageContainerConfiguration>
-    (builder.Configuration.GetSection(LuaStorageContainerConfiguration.SectionName)));
+    (builder.Configuration.GetSection(LuaStorageContainerConfiguration.SectionName));
 // -------------- TWITCH --------------
 
 builder.Services.AddDataProtection()

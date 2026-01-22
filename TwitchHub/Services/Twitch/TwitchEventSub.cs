@@ -20,8 +20,10 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
     private readonly TwitchTokenProvider _tokenProvider;
     private readonly TwitchConfiguration _config;
     private readonly ILogger<TwitchEventSub> _logger;
-    private bool _disposed = false;
+
+    public bool IsConnected { get; private set; }
     private string? _broadcasterId;
+    private bool _disposed;
 
     public TwitchEventSub(
         ILogger<TwitchEventSub> logger,
@@ -37,36 +39,37 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
         _config = config.Value;
         _luaReactions = luaReactions;
         _tokenProvider = tokenProvider;
-        _tokenProvider.OnTokenRefreshed += OnTokenRefreshed;
-        _client.WebsocketConnected += OnWebsocketConnected;
-        _client.WebsocketDisconnected += OnWebsocketDisconnected;
-        _client.ChannelFollow += OnChannelFollow;
-        _client.ChannelSubscribe += OnChannelSubscribe;
-        _client.ChannelSubscriptionGift += OnChannelSubscriptionGift;
-        _client.ChannelCheer += OnChannelCheer;
-        _client.ChannelPointsCustomRewardRedemptionAdd += OnChannelPointsRedemption;
-        _client.StreamOnline += OnStreamOnline;
-        _client.StreamOffline += OnStreamOffline;
-        _client.ErrorOccurred += OnErrorOccurred;
+        HookEvents();
     }
 
     private async Task OnTokenRefreshed(string arg)
     {
-        _logger.LogInformation("Token updated. Reconnecting EventSub Websocket...");
-        _ = await _client.DisconnectAsync();
-        _ = await Task.Delay(TimeSpan.FromSeconds(5))
-            .ContinueWith(async (state) =>
-            {
-                _ = await _client.ReconnectAsync();
-            });
+        _logger.LogInformation("Token refreshed. Reconnecting EventSub Websocket...");
+        if (IsConnected)
+        {
+            await _client.DisconnectAsync();
+            IsConnected = false;
+        }
+        await Task.Delay(TimeSpan.FromSeconds(5));
+        IsConnected = await _client.ConnectAsync();
     }
-    public async Task StartAsync(CancellationToken cancellationToken) => await _client.ConnectAsync();
 
-    public async Task StopAsync(CancellationToken cancellationToken) => await _client.DisconnectAsync();
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        IsConnected = await _client.ConnectAsync();
+    }
+
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        Dispose();
+        await _client.DisconnectAsync();
+        IsConnected = false;
+    }
 
     private async Task OnWebsocketConnected(object? sender, WebsocketConnectedArgs e)
     {
         _logger.LogInformation("Websocket {sessionId} connected!", _client.SessionId);
+
         if (e.IsRequestedReconnect)
         {
             return;
@@ -77,7 +80,7 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
             var token = await _tokenProvider.GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token))
             {
-                _logger.LogWarning("EventSub: No token to create subscriptions.");
+                _logger.LogWarning("Can't create subscriptions: token is null or empty");
                 return;
             }
 
@@ -89,7 +92,7 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
 
             if (_broadcasterId == null)
             {
-                _logger.LogError("EventSub: Could not resolve ID for channel {Channel}", _config.Channel);
+                _logger.LogError("Could not resolve ID for channel {Channel}", _config.Channel);
                 return;
             }
 
@@ -104,52 +107,29 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
     private async Task SubscribeToEvents(string sessionId)
     {
         var bId = _broadcasterId!;
+        static Dictionary<string, string> BroadcasterOnly(string id) =>
+            new() { ["broadcaster_user_id"] = id };
 
-        var subs = new List<Task>
-        {
-            // Follow (v2) - requires moderator_user_id same as broadcaster if token is owner's
+        List<Task> subs =
+        [
             CreateSub("channel.follow", "2", new Dictionary<string, string>
             {
                 { "broadcaster_user_id", bId },
                 { "moderator_user_id", bId }
             }, sessionId),
 
-            // Subscribe (v1)
-            CreateSub("channel.subscribe", "1", new Dictionary<string, string>
-            {
-                { "broadcaster_user_id", bId }
-            }, sessionId),
+            CreateSub("channel.subscribe", "1", BroadcasterOnly(bId), sessionId),
 
-            // Subscription Gift (v1)
-            CreateSub("channel.subscription.gift", "1", new Dictionary<string, string>
-            {
-                { "broadcaster_user_id", bId }
-            }, sessionId),
+            CreateSub("channel.subscription.gift", "1", BroadcasterOnly(bId), sessionId),
 
-            // Cheer (Bits) (v1)
-            CreateSub("channel.cheer", "1", new Dictionary<string, string>
-            {
-                { "broadcaster_user_id", bId }
-            }, sessionId),
+            CreateSub("channel.cheer", "1", BroadcasterOnly(bId), sessionId),
 
-            // Channel Points Redemption (v1)
-            CreateSub("channel.channel_points_custom_reward_redemption.add", "1", new Dictionary<string, string>
-            {
-                { "broadcaster_user_id", bId }
-            }, sessionId),
+            CreateSub("channel.channel_points_custom_reward_redemption.add", "1", BroadcasterOnly(bId), sessionId),
 
-            // Stream Online (v1)
-            CreateSub("stream.online", "1", new Dictionary<string, string>
-            {
-                { "broadcaster_user_id", bId }
-            }, sessionId),
+            CreateSub("stream.online", "1", BroadcasterOnly(bId), sessionId),
 
-            // Stream Offline (v1)
-            CreateSub("stream.offline", "1", new Dictionary<string, string>
-            {
-                { "broadcaster_user_id", bId }
-            }, sessionId)
-        };
+            CreateSub("stream.offline", "1", BroadcasterOnly(bId), sessionId)
+        ];
 
         await Task.WhenAll(subs);
         _logger.LogInformation("EventSub subscriptions sent.");
@@ -175,8 +155,6 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
         if (!_disposed)
         {
             await Task.Delay(TimeSpan.FromSeconds(5));
-            if (string.IsNullOrEmpty(await _tokenProvider.GetAccessTokenAsync()))
-                return;
             _ = await _client.ReconnectAsync();
         }
     }
@@ -204,7 +182,7 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
     {
         var evt = e.Payload.Event;
         _logger.LogInformation("New Subscriber: {User} (Tier {Tier})", evt.UserName, evt.Tier);
-        await _luaReactions.CallAsync(LuaReactionKind.Subscribe, evt.UserName, evt.UserId, int.Parse(evt.Tier), evt.IsGift);
+        await _luaReactions.CallAsync(LuaReactionKind.Subscribe, evt.UserName, evt.UserId, int.TryParse(evt.Tier, out var tier) ? tier : 1000, evt.IsGift);
     }
 
     private async Task OnChannelSubscriptionGift(object? sender, ChannelSubscriptionGiftArgs e)
@@ -212,7 +190,7 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
         var evt = e.Payload.Event;
         _logger.LogInformation("{User} gifted {Total} subs!", evt.UserName, evt.Total);
         await _luaReactions.CallAsync(LuaReactionKind.GiftSubscribe,
-            evt.UserName ?? LuaValue.Nil, evt.UserId ?? LuaValue.Nil, evt.Total, int.Parse(evt.Tier), evt.CumulativeTotal ?? evt.Total);
+            evt.UserName ?? LuaValue.Nil, evt.UserId ?? LuaValue.Nil, evt.Total, int.TryParse(evt.Tier, out var tier) ? tier : 1000, evt.CumulativeTotal ?? evt.Total);
     }
 
     private async Task OnChannelCheer(object? sender, ChannelCheerArgs e)
@@ -244,18 +222,26 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
         await _luaReactions.CallAsync(LuaReactionKind.StreamOff);
     }
 
-    public void Dispose()
-    {
-        if (_disposed)
-        {
-            return;
-        }
 
+    private void HookEvents()
+    {
+        _tokenProvider.OnTokenRefreshed += OnTokenRefreshed;
+        _client.WebsocketConnected += OnWebsocketConnected;
+        _client.WebsocketDisconnected += OnWebsocketDisconnected;
+        _client.ChannelFollow += OnChannelFollow;
+        _client.ChannelSubscribe += OnChannelSubscribe;
+        _client.ChannelSubscriptionGift += OnChannelSubscriptionGift;
+        _client.ChannelCheer += OnChannelCheer;
+        _client.ChannelPointsCustomRewardRedemptionAdd += OnChannelPointsRedemption;
+        _client.StreamOnline += OnStreamOnline;
+        _client.StreamOffline += OnStreamOffline;
+        _client.ErrorOccurred += OnErrorOccurred;
+    }
+    private void UnHookEvents()
+    {
+        _tokenProvider.OnTokenRefreshed -= OnTokenRefreshed;
         _client.WebsocketConnected -= OnWebsocketConnected;
         _client.WebsocketDisconnected -= OnWebsocketDisconnected;
-        _client.WebsocketReconnected -= OnWebsocketReconnected;
-        _client.ErrorOccurred -= OnErrorOccurred;
-
         _client.ChannelFollow -= OnChannelFollow;
         _client.ChannelSubscribe -= OnChannelSubscribe;
         _client.ChannelSubscriptionGift -= OnChannelSubscriptionGift;
@@ -263,7 +249,16 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
         _client.ChannelPointsCustomRewardRedemptionAdd -= OnChannelPointsRedemption;
         _client.StreamOnline -= OnStreamOnline;
         _client.StreamOffline -= OnStreamOffline;
-
-        _disposed = true;
+        _client.ErrorOccurred -= OnErrorOccurred;
     }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+        UnHookEvents();
+    }
+
 }
