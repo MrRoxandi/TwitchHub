@@ -7,7 +7,7 @@
 ## Features
 
 - **TwitchService:**
-  - Fully customizable own events though Twitch Events (Chat messages, Chat comamnds, Subs and [more](_))
+  - Fully customizable own events though Twitch Events (Chat messages, Chat comamnds, Subs and [more](TwitchHub/Docs/EN/KIndPrototypes.md))
 - **MediaService:**
   - Play any audio and video files with this service on separated channels
   - Suports output on local port and streamnames like: `http://127.0.0.1:port/streamname`
@@ -27,15 +27,15 @@
 ## Installation (Windows)
 
 1. Ensure you have Windows with .NET 9 installed. [You can download .NET 9 here if needed](https://dotnet.microsoft.com/en-us/download).
-2. Download the latest release from the [Releases](https://github.com/MrRoxandi/TwitchController/releases) page.
+2. Download the latest release from the [Releases](https://github.com/MrRoxandi/TwitchHub/releases) page.
 3. Extract the archive to a desired location.
 
 ## Running (Windows)
 
 1. Navigate to the extracted directory.
-2. Find the appsettings file.json and configure it by following the [documentation](doclink).
+2. Find the appsettings file.json and configure it by following the [documentation](TwitchHub/Docs/EN/MainConfig.md).
 3. Run the `TwitchHub.exe`.
 
 ## LUA Scripting
 
-This whole project is based on a system of events that trigger the corresponding actions (LuaReactions), which are located in configs/reactions. For a detailed understanding of how to create and write LuaReactions data, you should read the documentation: [GUIDE RU](grulink) | [GUIDE ENG](genglink) .
+This whole project is based on a system of events that trigger the corresponding actions (LuaReactions), which are located in configs/reactions. For a detailed understanding of how to create and write LuaReactions data, you should read the documentation: [GUIDE RU](TwitchHub/Docs/RU/MainDoc.md) | [GUIDE ENG](TwitchHub/Docs/EN/MainDoc.md) .
