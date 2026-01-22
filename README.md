@@ -1,13 +1,13 @@
 # TwitchHub
 
-> This project consolidates essential Twitch streaming tools into one platform, including music playback, keyboard and mouse emulation, and data storage. All features are activated via various events system.
+> TwitchHub is an event-driven platform for Twitch streamers that provides programmatic control over media playback, hardware input/output, and Twitch platform interactions through a Lua scripting interface. The system captures events from multiple sources (Twitch chat, EventSub, hardware inputs, media playback) and dispatches them to user-defined Lua scripts that can trigger automated responses.
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/MrRoxandi/TwitchHub)
 
 ## Features
 
 - **TwitchService:**
-  - Fully customizable own events though Twitch Events (Chat messages, Chat comamnds, Subs and [more](TwitchHub/Docs/EN/KIndPrototypes.md))
+  - Fully customizable own events though Twitch Events (Chat messages, Chat comamnds, Subs and [other types](TwitchHub/Docs/EN/KindPrototypes.md))
 - **MediaService:**
   - Play any audio and video files with this service on separated channels
   - Suports output on local port and streamnames like: `http://127.0.0.1:port/streamname`
