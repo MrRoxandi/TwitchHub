@@ -115,7 +115,7 @@ public sealed class TwitchChatClient : IHostedService, IDisposable
 
     public async Task StopAsync(CancellationToken ct)
     {
-        _connectionCts.Cancel();
+        await _connectionCts.CancelAsync();
         if (_client.IsConnected)
         {
             await _client.DisconnectAsync();

@@ -40,6 +40,7 @@ public class LuaSharedManager : IDisposable, IHostedService
         _state.Environment["medialib"] = serviceProvider.GetRequiredService<LuaMediaLib>();
         _state.Environment["pointslib"] = serviceProvider.GetRequiredService<LuaPointsLib>();
         _state.Environment["scriptlib"] = serviceProvider.GetRequiredService<LuaScriptLib>();
+        _state.Environment["speechlib"] = serviceProvider.GetRequiredService<LuaSpeechLib>();
         _state.Environment["storagelib"] = serviceProvider.GetRequiredService<LuaStorageLib>();
         _state.Environment["twitchlib"] = serviceProvider.GetRequiredService<LuaTwitchLib>();
         _state.Environment["utilslib"] = serviceProvider.GetRequiredService<LuaUtilsLib>();
@@ -61,6 +62,9 @@ public class LuaSharedManager : IDisposable, IHostedService
         _reactionsWatcher.Deleted += OnReactionFileDeleted;
         _reactionsWatcher.Renamed += OnReactionFileRenamed;
 
+        _scriptsWatcher.Created += OnScriptFileCreated;
+        _scriptsWatcher.Deleted += OnScripFileDeleted;
+        _scriptsWatcher.Renamed += OnScripFileRenamed;
     }
 
     // ================= IHostedService =================
@@ -69,24 +73,32 @@ public class LuaSharedManager : IDisposable, IHostedService
     {
         _logger.LogInformation("LuaSharedManager starting. Loading existing reactions...");
 
-        var files = Directory.GetFiles(_reactionsPath, "*.lua");
-        foreach (var file in files)
+        var reactionFiles = Directory.GetFiles(_reactionsPath, "*.lua");
+        foreach (var file in reactionFiles)
         {
             await ProcessFileAsync(file);
         }
 
+        var scriptsFiles = Directory.GetFiles(_scriptsPath, "*.lua");
+        foreach(var file in scriptsFiles)
+        {
+            _luaScripts.UpdateScript(file, _state);
+        }
+
         _reactionsWatcher.EnableRaisingEvents = true;
+        _scriptsWatcher.EnableRaisingEvents = true;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
         _reactionsWatcher.EnableRaisingEvents = false;
+        _scriptsWatcher.EnableRaisingEvents = true;
         return Task.CompletedTask;
     }
 
     // ================= File System Events =================
 
-        // ================= Reactions =================
+    // ================= Reactions =================
     private void OnReactionFileChanged(object sender, FileSystemEventArgs e) => DebounceFileEvent(e.FullPath, () => ProcessFileAsync(e.FullPath));
 
     private void OnReactionFileDeleted(object sender, FileSystemEventArgs e)

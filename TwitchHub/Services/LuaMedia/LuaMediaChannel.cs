@@ -13,7 +13,7 @@ public sealed class LuaMediaChannel : IDisposable
     private readonly MediaPlayer _player;
     private readonly ConcurrentQueue<Media> _queue = [];
     private readonly Lock _sync = new();
-    private bool _disposed = false;
+    private bool _disposed;
 
     // ================= EVENTS =================
 
@@ -101,7 +101,7 @@ public sealed class LuaMediaChannel : IDisposable
 
             lock (_sync)
             {
-                if (!_player.IsPlaying && !_player.CanPause)
+                if (_player is { IsPlaying: false, CanPause: false })
                     PlayNext();
             }
         }
@@ -147,7 +147,7 @@ public sealed class LuaMediaChannel : IDisposable
         {
             var skippedItem = CurrentItem;
             _player.Stop();
-            OnSkipped?.Invoke(this, new MediaSkippedEventArgs(Name, CurrentItem));
+            OnSkipped?.Invoke(this, new MediaSkippedEventArgs(Name, skippedItem));
             PlayNext();
         }
     }
@@ -197,11 +197,11 @@ public sealed class LuaMediaChannel : IDisposable
     private Media CreateMedia(string source)
     {
         source = source.Trim();
-        ArgumentException.ThrowIfNullOrEmpty(source, nameof(source));
+        ArgumentException.ThrowIfNullOrEmpty(source);
         var web = Uri.IsWellFormedUriString(source, UriKind.Absolute);
         var media = web
             ? new Media(_libVLC, new Uri(source))
-            : new Media(_libVLC, source, FromType.FromPath);
+            : new Media(_libVLC, source);
 
         ConfigureOutputOptions(media);
 
@@ -213,17 +213,22 @@ public sealed class LuaMediaChannel : IDisposable
         var portEnabled = _configuration.PortEnabled;
         var keepOnSystem = _configuration.KeepOnSystem;
 
-        if (portEnabled && !keepOnSystem)
+        switch (portEnabled)
         {
-            var soutOption = $":sout=#http{{mux=ts,dst=127.0.0.1:{_configuration.Port}/{_configuration.Stream}}}";
-            media.AddOption(soutOption);
-            media.AddOption(":sout-keep");
-        }
-        else if (portEnabled && keepOnSystem)
-        {
-            var httpOutput = $"http{{mux=ts,dst=127.0.0.1:{_configuration.Port}/{_configuration.Stream}}}";
-            var soutOption = $":sout=#duplicate{{dst={httpOutput},dst=display}}";
-            media.AddOption(soutOption);
+            case true when !keepOnSystem:
+            {
+                var soutOption = $":sout=#http{{mux=ts,dst=127.0.0.1:{_configuration.Port}/{_configuration.Stream}}}";
+                media.AddOption(soutOption);
+                media.AddOption(":sout-keep");
+                break;
+            }
+            case true when keepOnSystem:
+            {
+                var httpOutput = $"http{{mux=ts,dst=127.0.0.1:{_configuration.Port}/{_configuration.Stream}}}";
+                var soutOption = $":sout=#duplicate{{dst={httpOutput},dst=display}}";
+                media.AddOption(soutOption);
+                break;
+            }
         }
     }
 

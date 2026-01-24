@@ -50,7 +50,10 @@ public sealed partial class LuaTwitchLib(
 
     [LuaMember("isbroadcaster")]
     public async Task<bool> IsBroadcaster(string userId)
-        => string.Equals(userId, await GetBroadcasterId(), StringComparison.Ordinal);
+    {
+        var bId = await GetBroadcasterId();
+        return string.Equals(userId, bId, StringComparison.Ordinal);
+    }
 
     [LuaMember("ismoderator")]
     public async Task<bool> IsModerator(string userId)
@@ -135,14 +138,14 @@ public sealed partial class LuaTwitchLib(
         }
 
         var rank = await GetUserRank(userid);
-        return rank.HasFlag(threshold);
+        return rank >= threshold;
     }
 
     // ================= INTERNAL =================
 
     private async Task<string> GetBroadcasterId()
     {
-        if (_broadcasterId is not null)
+        if (!string.IsNullOrEmpty(_broadcasterId))
         {
             return _broadcasterId;
         }

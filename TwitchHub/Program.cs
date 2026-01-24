@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -47,13 +48,21 @@ builder.Services.AddMudServices();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddDbContextFactory<PointsDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString(PointsDbContext.ConnectionString)));
+builder.Services.AddDbContextFactory<TwitchClipsDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString(TwitchClipsDbContext.ConnectionString)));
+
 builder.Services.Configure<TwitchConfiguration>
     (builder.Configuration.GetSection(TwitchConfiguration.SectionName));
 builder.Services.Configure<LuaMediaServiceConfiguration>
     (builder.Configuration.GetSection(LuaMediaServiceConfiguration.SectionName));
 builder.Services.Configure<LuaStorageContainerConfiguration>
     (builder.Configuration.GetSection(LuaStorageContainerConfiguration.SectionName));
-// -------------- TWITCH --------------
+builder.Services.Configure<TextToSpeechEngineConfiguration>
+    (builder.Configuration.GetSection(TextToSpeechEngineConfiguration.SectionName));
+
+// ================= TWITCH =================
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(
@@ -88,13 +97,7 @@ builder.Services.AddHostedService<TwitchChatClient>();
 builder.Services.AddHostedService<TwitchEventSub>();
 builder.Services.AddHostedService<TwitchClipPoller>();
 
-// -------------- LUA SERVICES --------------
-
-//builder.Services.AddSingleton<LuaStateProvider>();
-builder.Services.AddDbContextFactory<PointsDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString(PointsDbContext.ConnectionString)));
-builder.Services.AddDbContextFactory<TwitchClipsDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString(TwitchClipsDbContext.ConnectionString)));
+// ================= LUA SERVICES =================
 
 builder.Services.AddSingleton<LuaDataContainer>();
 builder.Services.AddSingleton<LuaMediaService>();
@@ -116,8 +119,9 @@ builder.Services.AddSingleton<LuaReactionsService>();
 builder.Services.AddSingleton<LuaScriptsSerivce>();
 builder.Services.AddHostedService<LuaHardwareService>();
 builder.Services.AddHostedService<LuaSharedManager>();
+builder.Services.AddSingleton<TextToSpeechEngine>();
 
-// -------------- LUA LIBS --------------
+// ================= LUA LIBS =================
 
 builder.Services.AddSingleton<LuaHardwareLib>();
 builder.Services.AddSingleton<LuaTwitchLib>();
@@ -127,6 +131,7 @@ builder.Services.AddSingleton<LuaScriptLib>();
 builder.Services.AddSingleton<LuaStorageLib>();
 builder.Services.AddSingleton<LuaMediaLib>();
 builder.Services.AddSingleton<LuaLoggerLib>();
+builder.Services.AddSingleton<LuaSpeechLib>();
 
 // Configure Kestrel from appsettings.json
 builder.WebHost.ConfigureKestrel((context, options) => options.Configure(context.Configuration.GetSection("Kestrel")));
@@ -136,8 +141,8 @@ try
 {
     var pointsFactory = app.Services.GetRequiredService<IDbContextFactory<PointsDbContext>>();
     var clipsFactory = app.Services.GetRequiredService<IDbContextFactory<TwitchClipsDbContext>>();
-    using var pointsContext = await pointsFactory.CreateDbContextAsync();
-    using var clipsContext = await clipsFactory.CreateDbContextAsync();
+    await using var pointsContext = await pointsFactory.CreateDbContextAsync();
+    await using var clipsContext = await clipsFactory.CreateDbContextAsync();
     await pointsContext.Database.MigrateAsync();
     await clipsContext.Database.MigrateAsync();
     app.Logger.LogInformation("Database migration/check completed successfully.");

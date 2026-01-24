@@ -367,3 +367,8 @@ FodyWeavers.xsd
 *.dat
 /TwitchHub/configs/reactions
 /TwitchHub/configs/addons/test.lua
+.idea/.idea.TwitchHub/.idea/.gitignore
+.idea/.idea.TwitchHub/.idea/encodings.xml
+.idea/.idea.TwitchHub/.idea/indexLayout.xml
+.idea/.idea.TwitchHub/.idea/vcs.xml
+/TwitchHub/configs/scripts

@@ -1,6 +1,7 @@
 ﻿using LibVLCSharp.Shared;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
+using System.Runtime.Versioning;
 using TwitchHub.Configurations;
 using TwitchHub.Lua.Services;
 
@@ -11,7 +12,8 @@ public sealed class LuaMediaService : IDisposable
     private readonly LuaMediaServiceConfiguration _configuration;
     private readonly LuaReactionsService _luaReactions;
     private readonly LibVLC _libVlc;
-
+    private readonly TextToSpeechEngine _ttsEngine;
+    
     private readonly ConcurrentDictionary<string, LuaMediaChannel> _channels
         = new(StringComparer.OrdinalIgnoreCase);
     private readonly ILogger<LuaMediaService> _logger;
@@ -26,13 +28,15 @@ public sealed class LuaMediaService : IDisposable
     public LuaMediaService(
         IOptions<LuaMediaServiceConfiguration> options,
         ILogger<LuaMediaService> logger,
-        LuaReactionsService luaReactions)
+        LuaReactionsService luaReactions,
+        TextToSpeechEngine ttsEngine)
     {
         Core.Initialize();
         _configuration = options.Value;
         _libVlc = new LibVLC("--http-host=localhost", "--quiet");
         _logger = logger;
         _luaReactions = luaReactions;
+        _ttsEngine =  ttsEngine;
         _libVlc.Log += OnLibVlcLog;
         InitializeChannels();
     }
@@ -44,7 +48,7 @@ public sealed class LuaMediaService : IDisposable
         {
             LibVLCSharp.Shared.LogLevel.Warning => Microsoft.Extensions.Logging.LogLevel.Warning,
             LibVLCSharp.Shared.LogLevel.Error => Microsoft.Extensions.Logging.LogLevel.Error,
-            _ => Microsoft.Extensions.Logging.LogLevel.Debug,
+            _ => Microsoft.Extensions.Logging.LogLevel.Debug
         };
         _logger.Log(mappedLevel, "{message}", e.Message);
     }
@@ -182,11 +186,9 @@ public sealed class LuaMediaService : IDisposable
         {
             return ch.GetVolume();
         }
-        else
-        {
-            _ = OnError(this, new(channel, null, new ArgumentException($"Channel with name {channel} doesn't exist")));
-            return -1;
-        }
+
+        _ = OnError(this, new(channel, null, new ArgumentException($"Channel with name {channel} doesn't exist")));
+        return -1;
     }
 
     public void SetSpeed(string channel, float speed)
@@ -209,12 +211,48 @@ public sealed class LuaMediaService : IDisposable
         {
             return ch.GetSpeed();
         }
-        else
-        {
-            _ = OnError(this, new(channel, null, new ArgumentException($"Channel with name {channel} doesn't exist")));
-            return -1.0f;
-        }
+
+        _ = OnError(this, new(channel, null, new ArgumentException($"Channel with name {channel} doesn't exist")));
+        return -1.0f;
     }
+
+    // ================= SPEECH SECTION =================
+
+    [SupportedOSPlatform("windows")]
+    public void SpeechSpeak(string text) => _ttsEngine.Enqueue(text);
+    
+    [SupportedOSPlatform("windows")]
+    public Task SpeechSpeakAsync(string text) => _ttsEngine.EnqueueAsync(text);
+    
+    [SupportedOSPlatform("windows")]
+    public void SpeechPause() => _ttsEngine.Pause();
+
+    [SupportedOSPlatform("windows")]
+    public void SpeechResume() => _ttsEngine.Resume();
+    
+    [SupportedOSPlatform("windows")]
+    public void SpeechStop() => _ttsEngine.Stop();
+    [SupportedOSPlatform("windows")]
+    public void SpeechClear() => _ttsEngine.ClearQueue();
+    [SupportedOSPlatform("windows")]
+    public void SpeechSkip() => _ttsEngine.Skip();
+    
+    // ================= SPEECH SETTINGS =================
+    [SupportedOSPlatform("windows")]
+    public void SpeechSetVolume(int volume) => _ttsEngine.SetVolume(volume);
+    
+    [SupportedOSPlatform("windows")]
+    public int SpeechGetVolume() => _ttsEngine.GetVolume();
+    [SupportedOSPlatform("windows")]
+    public void SpeechSetRate(int rate) => _ttsEngine.SetRate(rate);
+    [SupportedOSPlatform("windows")]
+    public int SpeechGetRate() => _ttsEngine.GetRate();
+    [SupportedOSPlatform("windows")]
+    public IEnumerable<string> SpeechGetVoices() => _ttsEngine.GetAvailableVoices();
+    [SupportedOSPlatform("windows")]
+    public void SpeechSelectVoice(string voice) => _ttsEngine.SelectVoice(voice); 
+    [SupportedOSPlatform("windows")]
+    public void SpeechReloadBannedWords() => _ttsEngine.ReloadBannedWords();
 
     // ================= UTILITIES =================
     private void ThrowIfDisposed()

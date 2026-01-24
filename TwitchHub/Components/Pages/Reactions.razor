@@ -1,4 +1,5 @@
 ﻿@page "/reactions"
+@using System.Threading.Tasks
 @using TwitchHub.Lua.Services
 @inject LuaReactionsService ReactionsService
 @inject ISnackbar Snackbar
@@ -17,7 +18,8 @@
                             <MudTh>Название (Файл)</MudTh>
                             <MudTh>Кулдаун (мс)</MudTh>
                             <MudTh>Путь</MudTh>
-                            <MudTh Style="text-align: right;">Состояние</MudTh>
+                            <MudTh>Активировать</MudTh>
+                            <MudTh>Состояние</MudTh>
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd DataLabel="Name">
@@ -27,10 +29,11 @@
                             <MudTd DataLabel="Path">
                                 <MudText Typo="Typo.caption" Class="mud-text-secondary">@System.IO.Path.GetFileName(context.FilePath)</MudText>
                             </MudTd>
-                            <MudTd DataLabel="State" Style="text-align: right;">
-                                <MudSwitch T="bool" Value="@context.IsEnabled"
-                                           ValueChanged="@((v) => ToggleReaction(context, v))"
-                                           Color="Color.Success" />
+                            <MudTd>
+                                <MudIconButton Icon="@Icons.Material.Filled.RunCircle" Color="Color.Success" OnClick="@(() => RunReaction(context))"/>
+                            </MudTd>
+                            <MudTd DataLabel="State">
+                                <MudSwitch T="bool" @bind-Value="context.IsEnabled" Color="Color.Success" />
                             </MudTd>
                         </RowTemplate>
                     </MudTable>
@@ -45,7 +48,7 @@
 </MudPaper>
 
 @code {
-    private Dictionary<LuaReactionKind, List<LuaReaction>> _groupedReactions = new();
+    private Dictionary<LuaReactionKind, IEnumerable<LuaReaction>> _groupedReactions = new();
 
     protected override void OnInitialized()
     {
@@ -60,9 +63,15 @@
         foreach (var kind in kinds)
         {
             if (kind == LuaReactionKind.None) continue;
-            var reactions = ReactionsService.Get(kind).ToList();
+            var reactions = ReactionsService.Get(kind);
             _groupedReactions[kind] = reactions;
         }
+    }
+
+    private async Task RunReaction(LuaReaction reaction)
+    {
+        await ReactionsService.CallAsync(reaction.Name, reaction.Kind, []);
+        Snackbar.Add($"Реакция {reaction.Name} выполнена", Severity.Success);
     }
 
     private void ToggleReaction(LuaReaction reaction, bool isEnabled)

@@ -25,13 +25,13 @@ public sealed class TwitchTokenProvider(
         await _lock.WaitAsync(ct);
         try
         {
-            if (_store is null)
+            if (_store is not null)
+                return _store is null ? null : !_store.IsExpired ? _store.AccessToken : await RefreshInternalAsync(ct);
+            
+            _store = await _fileStorage.LoadAsync(ct);
+            if (_store is not null)
             {
-                _store = await _fileStorage.LoadAsync(ct);
-                if (_store is not null)
-                {
-                    _api.Settings.AccessToken = _store.AccessToken;
-                }
+                _api.Settings.AccessToken = _store.AccessToken;
             }
 
             return _store is null ? null : !_store.IsExpired ? _store.AccessToken : await RefreshInternalAsync(ct);
@@ -95,6 +95,6 @@ public sealed class TwitchTokenProvider(
     {
         _store = newStore;
         _api.Settings.AccessToken = newStore.AccessToken;
-        _ = (OnTokenRefreshed?.Invoke(newStore.AccessToken));
+        _ = OnTokenRefreshed?.Invoke(newStore.AccessToken);
     }
 }

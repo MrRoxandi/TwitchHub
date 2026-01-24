@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using TwitchHub.Configurations;
 using TwitchHub.Lua.Services;
@@ -67,7 +66,7 @@ public sealed class TwitchClipPoller(
             }
         }
 
-        using var dbContext = _dbContextFactory.CreateDbContext();
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         var lastClipTime = await dbContext.TwitchClips
             .OrderByDescending(c => c.CreatedAt)
@@ -78,7 +77,7 @@ public sealed class TwitchClipPoller(
             ? DateTime.UtcNow.AddYears(-2)
             : lastClipTime.AddSeconds(1);
 
-        GetClipsResponse? response = null;
+        GetClipsResponse? response;
         string? cursor = null;
         var existingIds = await dbContext.TwitchClips
             .Select(c => c.ClipId)

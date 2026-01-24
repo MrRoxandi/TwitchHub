@@ -68,7 +68,7 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
 
     private async Task OnWebsocketConnected(object? sender, WebsocketConnectedArgs e)
     {
-        _logger.LogInformation("Websocket {sessionId} connected!", _client.SessionId);
+        _logger.LogInformation("Websocket {SessionId} connected!", _client.SessionId);
 
         if (e.IsRequestedReconnect)
         {
@@ -198,7 +198,7 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
         var evt = e.Payload.Event;
         _logger.LogInformation("{User} cheered {Bits} bits!", evt.UserName, evt.Bits);
         await _luaReactions.CallAsync(LuaReactionKind.Cheer,
-            evt.UserName ?? LuaValue.Nil, evt.UserId ?? LuaValue.Nil, evt.Bits, evt.Message ?? LuaValue.Nil);
+            evt.UserName ?? LuaValue.Nil, evt.UserId ?? LuaValue.Nil, evt.Bits, evt.Message);
     }
 
     private async Task OnChannelPointsRedemption(object? sender, ChannelPointsCustomRewardRedemptionArgs e)
@@ -259,6 +259,7 @@ public sealed class TwitchEventSub : IHostedService, IDisposable
             return;
         }
         UnHookEvents();
+        _disposed = true;
     }
 
 }
