@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="LibVLCSharp" Version="3.9.5" />
-    <PackageReference Include="LuaCSharp" Version="0.5.1" />
+    <PackageReference Include="LuaCSharp" Version="0.5.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.11">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -27,7 +27,7 @@
     <PackageReference Include="TwitchLib.Api" Version="3.10.2" />
     <PackageReference Include="TwitchLib.Client" Version="4.0.1" />
     <PackageReference Include="TwitchLib.EventSub.Websockets" Version="0.8.0" />
-    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.23" />
   </ItemGroup>
 
 
