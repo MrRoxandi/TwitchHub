@@ -24,5 +24,5 @@ public sealed partial class LuaScriptLib(
     [LuaMember("remove")]
     public void Remove(string key) => _luaScripts.RemoveScript(key);
     [LuaMember("call")]
-    public async Task Call(string key) => await _luaScripts.CallAsync(key);
+    public async Task<LuaValue> Call(string key) => await _luaScripts.CallAsync(key);
 }

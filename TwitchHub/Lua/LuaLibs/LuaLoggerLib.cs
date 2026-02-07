@@ -44,7 +44,7 @@ public sealed partial class LuaLoggerLib(
 
     // ================= HELPERS =================
 
-    private static object?[] ToLogArgs(LuaTable table)
+    private static string?[] ToLogArgs(LuaTable table)
         => table.ArrayLength != 0 || table.HashMapCount != 0
         ? [.. table.Select(kvp => kvp.Value.ToString())]
         : [];

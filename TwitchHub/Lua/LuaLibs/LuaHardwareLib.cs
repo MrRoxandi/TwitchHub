@@ -56,7 +56,7 @@ public sealed partial class LuaHardwareLib
 
     // ================= KEYBOARD =================
 
-    [LuaMember("parsekeycode")]
+    [LuaMember("parsekey")]
     public int ParseKeyCode(string key)
     {
         if (string.IsNullOrWhiteSpace(key))

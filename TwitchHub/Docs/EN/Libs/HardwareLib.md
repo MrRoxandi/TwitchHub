@@ -7,8 +7,8 @@
 | Name              | Arguments                  | Description                                                                    |
 | :---------------- | :------------------------- | :----------------------------------------------------------------------------- |
 | `keycodes`        | -                          | A table containing all available key codes for emulation.                      |
-| `parsekeycode`    | `string key`               | Converts a string representation of a key into its key code.                   |
-| `keycodetostring` | `int code`                 | Converts a key code into its string representation.                            |
+| `parsekey`        | `string key`               | Converts a string representation of a key into its key code.                   |
+| `keytostring`     | `int code`                 | Converts a key code into its string representation.                            |
 | `keydown`         | `int code`                 | Simulates pressing a key down.                                                 |
 | `keyup`           | `int code`                 | Simulates releasing a key.                                                     |
 | `keytype`         | `int code`                 | Simulates a brief keystroke (press and release).                               |

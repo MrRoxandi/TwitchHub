@@ -1,11 +1,12 @@
 ﻿using SharpHook.Data;
+using System.Collections.Concurrent;
 
 namespace TwitchHub.Services.Hardware;
 
 public sealed class LuaBlockedKeys
 {
-    private readonly Dictionary<KeyCode, bool> _keys = [];
-    private readonly Dictionary<MouseButton, bool> _buttons = [];
+    private readonly ConcurrentDictionary<KeyCode, bool> _keys = [];
+    private readonly ConcurrentDictionary<MouseButton, bool> _buttons = [];
 
     public IEnumerable<KeyCode> BlockedKeys => _keys
         .Where(kvp => kvp.Value)

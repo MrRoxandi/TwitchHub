@@ -134,7 +134,7 @@ public sealed partial class LuaUtilsLib
     [LuaMember("stringfmt")]
     public string StringFormat(string str, LuaTable table)
     {
-        ReadOnlySpan<object?> luaValues = [.. table.Select(kvp => kvp.Value)];
+        object[] luaValues = [.. table.Select(kvp => kvp.Value.ToString())];
         return string.Format(str, luaValues);
     }
 

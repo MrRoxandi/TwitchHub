@@ -29,7 +29,7 @@ public sealed class LuaScriptsSerivce(ILogger<LuaScriptsSerivce> logger)
         => _scripts.TryGetValue(key, out var script) ? script : null;
 
     public bool Contains(string key) => _scripts.ContainsKey(key);
-    public async Task CallAsync(string key)
+    public async Task<LuaValue> CallAsync(string key)
     {
         try
         {
@@ -37,7 +37,7 @@ public sealed class LuaScriptsSerivce(ILogger<LuaScriptsSerivce> logger)
             if (script is not { })
             {
                 _logger.LogWarning("Attepted to call not existing {name} script", key);
-                return;
+                return LuaValue.Nil;
             }
 
             var result = await script.CallAsync();
@@ -45,10 +45,12 @@ public sealed class LuaScriptsSerivce(ILogger<LuaScriptsSerivce> logger)
             {
                 _logger.LogInformation("Call to {name} script failed due: {message}", key, result.ErrorMessage);
             }
+            return result.Result;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to call script: {name}", key);
+            return LuaValue.Nil;
         }
     }
 }

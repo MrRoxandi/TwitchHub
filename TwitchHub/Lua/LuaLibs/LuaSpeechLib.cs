@@ -16,8 +16,6 @@ public sealed partial class LuaSpeechLib(LuaMediaService service)
     public void Pause() => _service.SpeechPause();
     [LuaMember("resume")]
     public void Resume() => _service.SpeechResume();
-    [LuaMember("stop")]
-    public void Stop() => _service.SpeechStop();
     [LuaMember("clear")]
     public void Clear() => _service.SpeechClear();
     [LuaMember("skip")]

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using TwitchHub.Configurations;
 using TwitchLib.Api;
 using TwitchLib.Api.Helix.Models.Channels.GetChannelFollowers;
+using TwitchLib.Api.Helix.Models.Moderation.BanUser;
 using TwitchLib.Api.Helix.Models.Users.GetUsers;
 using TwitchLib.Client;
 using TwitchLib.Client.Models;
