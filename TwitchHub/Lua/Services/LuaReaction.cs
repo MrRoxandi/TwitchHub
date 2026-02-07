@@ -44,7 +44,8 @@ public sealed class LuaReaction(
             CallResult.ErrorMessage = ex.Message;
             if (_onError is not null)
             {
-                var callres = await _luaState.CallAsync(_onError, [Name, ex.Message, callTime]);
+                var filtered = ex.Message.Split(':').Last();
+                var callres = await _luaState.CallAsync(_onError, [Name, filtered, callTime]);
                 CallResult.Result = callres.FirstOrDefault(LuaValue.Nil);
             }
             else

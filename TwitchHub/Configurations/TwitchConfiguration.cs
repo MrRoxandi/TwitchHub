@@ -3,8 +3,8 @@
 public sealed class TwitchConfiguration
 {
     public const string SectionName = "Twitch";
-    public required string ClientId { get; init; }
-    public required string ClientSecret { get; init; }
+    public required string ClientId { get; init; } = "hd9kavndkos83ujswrqhuffa90kcb6";
+    public required string ClientSecret { get; init; } = "wk2hyrjc5o971aopgpo8jgg8dogn7e";
     public required string RedirectUrl { get; init; }
     public required string Channel { get; init; }
 

@@ -49,12 +49,14 @@ public class LuaSharedManager : IDisposable, IHostedService
         _reactionsWatcher = new FileSystemWatcher(_reactionsPath, "*.lua")
         {
             NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.CreationTime,
-            EnableRaisingEvents = false
+            EnableRaisingEvents = false,
+            IncludeSubdirectories = true,
         };
         _scriptsWatcher = new FileSystemWatcher(_scriptsPath, "*.lua")
         {
             NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.CreationTime,
-            EnableRaisingEvents = false
+            EnableRaisingEvents = false,
+            IncludeSubdirectories = true,
         };
 
         _reactionsWatcher.Changed += OnReactionFileChanged;
@@ -73,13 +75,13 @@ public class LuaSharedManager : IDisposable, IHostedService
     {
         _logger.LogInformation("LuaSharedManager starting. Loading existing reactions...");
 
-        var reactionFiles = Directory.GetFiles(_reactionsPath, "*.lua");
+        var reactionFiles = Directory.GetFiles(_reactionsPath, "*.lua", SearchOption.AllDirectories);
         foreach (var file in reactionFiles)
         {
             await ProcessFileAsync(file);
         }
 
-        var scriptsFiles = Directory.GetFiles(_scriptsPath, "*.lua");
+        var scriptsFiles = Directory.GetFiles(_scriptsPath, "*.lua", SearchOption.AllDirectories);
         foreach(var file in scriptsFiles)
         {
             _luaScripts.UpdateScript(file, _state);

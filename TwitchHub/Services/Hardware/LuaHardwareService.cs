@@ -46,44 +46,9 @@ public sealed class LuaHardwareService : IHostedService, IDisposable
     }
     private void KeyTyped(object? sender, KeyboardHookEventArgs e)
     {
-        if (_blockedKeys.IsBlocked(e.Data.KeyCode))
-        {
-            e.SuppressEvent = true;
-        }
-
         _ = Task.Run(async () => await _reactions.CallAsync(LuaReactionKind.KeyType, (int)e.Data.KeyCode));
     }
-    private void MousePressed(object? sender, MouseHookEventArgs e)
-    {
-        if (_blockedKeys.IsBlocked(e.Data.Button))
-        {
-            e.SuppressEvent = true;
-        }
-
-        _ = Task.Run(async () => await _reactions.CallAsync(LuaReactionKind.MouseDown, (int)e.Data.Button));
-    }
-
-    private void MouseReleased(object? sender, MouseHookEventArgs e)
-    {
-        if (_blockedKeys.IsBlocked(e.Data.Button))
-        {
-            e.SuppressEvent = true;
-        }
-
-        _ = Task.Run(async () => await _reactions.CallAsync(LuaReactionKind.MouseUp, (int)e.Data.Button));
-    }
-    private void MouseClicked(object? sender, MouseHookEventArgs e)
-    {
-        if (_blockedKeys.IsBlocked(e.Data.Button))
-        {
-            e.SuppressEvent = true;
-        }
-
-        _ = Task.Run(async () => await _reactions.CallAsync(LuaReactionKind.MouseClick, (int)e.Data.Button));
-    }
-
-    private void MouseMoved(object? sender, MouseHookEventArgs e) => _ = Task.Run(async () => await _reactions.CallAsync(LuaReactionKind.MouseMove, e.Data.X, e.Data.Y));
-    private void MouseWheel(object? sender, MouseWheelHookEventArgs e) => _ = Task.Run(async () => await _reactions.CallAsync(LuaReactionKind.MouseWheel, e.Data.Delta, e.Data.Direction.ToString()));
+    
     public Task StartAsync(CancellationToken cancellationToken)
     {
         _ = Task.Run(_hook.RunAsync, cancellationToken);
@@ -113,11 +78,6 @@ public sealed class LuaHardwareService : IHostedService, IDisposable
         _hook.KeyReleased += KeyUp;
         _hook.KeyPressed += KeyDown;
         _hook.KeyTyped += KeyTyped;
-        _hook.MousePressed += MousePressed;
-        _hook.MouseReleased += MouseReleased;
-        _hook.MouseClicked += MouseClicked;
-        _hook.MouseMoved += MouseMoved;
-        _hook.MouseWheel += MouseWheel;
     }
 
     private void UnhookEvents()
@@ -125,10 +85,5 @@ public sealed class LuaHardwareService : IHostedService, IDisposable
         _hook.KeyReleased -= KeyUp;
         _hook.KeyPressed -= KeyDown;
         _hook.KeyTyped -= KeyTyped;
-        _hook.MousePressed -= MousePressed;
-        _hook.MouseReleased -= MouseReleased;
-        _hook.MouseClicked -= MouseClicked;
-        _hook.MouseMoved -= MouseMoved;
-        _hook.MouseWheel -= MouseWheel;
     }
 }

@@ -140,28 +140,44 @@ public sealed partial class LuaHardwareLib
     }
 
     [LuaMember("keyblock")]
-    public void KeyBlock(int keyCode)
+    public void KeyBlock(int keyCode, int delay = 0)
     {
         var code = NormalizeKey(keyCode);
         _luaBlocked.Block(code);
         _logger.LogDebug("KeyBlock: {code}", code);
+        
+        _ = Task.Delay(delay).ContinueWith((_) =>
+        {
+            _luaBlocked.Unblock(code);
+            return Task.CompletedTask;
+        });
     }
 
     [LuaMember("keyunblock")]
-    public void KeyUnBlock(int keyCode)
+    public void KeyUnBlock(int keyCode, int delay = 0)
     {
         var code = NormalizeKey(keyCode);
         _luaBlocked.Unblock(code);
         _logger.LogDebug("KeyUnBlock: {code}", code);
+        _ = Task.Delay(delay).ContinueWith((_) =>
+        {
+            _luaBlocked.Block(code);
+            return Task.CompletedTask;
+        });
     }
 
     [LuaMember("keytoggle")]
-    public void KeyToggle(int keyCode)
+    public void KeyToggle(int keyCode, int delay = 0)
     {
         var code = NormalizeKey(keyCode);
         var oldState = _luaBlocked.IsBlocked(code);
         _luaBlocked.ToggleBlock(code);
         _logger.LogDebug("KeyToggle: {code} -> [{oldStae} -> {newState}]", code, oldState, !oldState);
+        _ = Task.Delay(delay).ContinueWith((_) =>
+        {
+            _luaBlocked.ToggleBlock(code);
+            return Task.CompletedTask;
+        });
     }
 
     // ================= MOUSE =================
@@ -242,34 +258,6 @@ public sealed partial class LuaHardwareLib
     [LuaMember("movemouse")]
     public void MoveMouse(int dx, int dy)
         => _simulator.SimulateMouseMovementRelative((short)dx, (short)dy);
-
-    [LuaMember("buttonisblocked")]
-    public bool ButtonIsBlocked(int keyCode)
-    {
-        var code = NormalizeButton(keyCode);
-        return _luaBlocked.IsBlocked(code);
-    }
-
-    [LuaMember("buttonblock")]
-    public void ButtonBlock(int keyCode)
-    {
-        var code = NormalizeButton(keyCode);
-        _luaBlocked.Block(code);
-    }
-
-    [LuaMember("buttonunblock")]
-    public void ButtonUnBlock(int keyCode)
-    {
-        var code = NormalizeButton(keyCode);
-        _luaBlocked.Unblock(code);
-    }
-
-    [LuaMember("buttontoggle")]
-    public void ButtonToggle(int keyCode)
-    {
-        var code = NormalizeKey(keyCode);
-        _luaBlocked.ToggleBlock(code);
-    }
 
     // ================= HELPERS =================
 
